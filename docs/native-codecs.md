@@ -12,7 +12,7 @@ Each codec directory has its own layout and build instructions. Inspect its `pac
 
 These container wrappers require Docker. Individual Makefiles may download pinned upstream source archives, so building can also require network access. Codec builds are separate from the normal root web-app build: `npm run build` bundles the artifacts already present; it does not run every `codecs/*` build script.
 
-Build artifacts such as generated `.js`, `.wasm`, and declaration files appear alongside codec sources in the relevant subdirectories (for example, [`codecs/webp/enc/`](../codecs/webp/enc/)). Follow each codec's existing conventions when deciding which outputs to regenerate and include in a change.
+Build artifacts such as generated `.js`, `.wasm`, and declaration files appear alongside codec sources in the relevant subdirectories (for example, [`codecs/webp/enc/`](../codecs/webp/enc/)). Follow each codec's existing conventions when deciding which outputs to regenerate and include in a change. The encoder selectors also show available version labels; see [codec version generation](codec-versions.md) for their sources and update workflow.
 
 ## Connect a codec to the app
 

@@ -17,6 +17,10 @@ using namespace emscripten;
 using AvifImagePtr = std::unique_ptr<avifImage, decltype(&avifImageDestroy)>;
 using AvifEncoderPtr = std::unique_ptr<avifEncoder, decltype(&avifEncoderDestroy)>;
 
+std::string version() {
+  return avifVersion();
+}
+
 struct AvifOptions {
   // [0 - 100]
   // 0 = worst quality
@@ -166,4 +170,5 @@ EMSCRIPTEN_BINDINGS(my_module) {
       .field("enableSharpYUV", &AvifOptions::enableSharpYUV);
 
   function("encode", &encode);
+  function("version", &version);
 }

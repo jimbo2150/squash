@@ -21,7 +21,7 @@ LIBSHARPYUV_MT := $(LIBWEBP_DIR)/build_mt/libsharpyuv.a
 export LIBSHARPYUV := $(LIBWEBP_DIR)/build/libsharpyuv.a
 
 OUT_ENC_JS = enc/avif_enc.js
-OUT_NODE_ENC_JS = enc/avif_node_enc.js
+OUT_NODE_ENC_JS = node_modules/build/version/enc/avif_node_enc.js
 OUT_ENC_MT_JS = enc/avif_enc_mt.js
 OUT_NODE_ENC_MT_JS = enc/avif_node_enc_mt.js
 OUT_DEC_JS = dec/avif_dec.js
@@ -35,7 +35,7 @@ HELPER_MAKEFLAGS := -f helper.Makefile
 
 .PHONY: all clean
 
-all: $(OUT_ENC_JS) $(OUT_DEC_JS) $(OUT_ENC_MT_JS)
+all: $(OUT_ENC_JS) $(OUT_DEC_JS) $(OUT_ENC_MT_JS) $(OUT_NODE_ENC_JS)
 
 # ST-Encoding
 $(OUT_ENC_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLists.txt $(LIBSHARPYUV_ST)
@@ -50,6 +50,21 @@ $(OUT_ENC_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLis
 			-DCONFIG_AV1_HIGHBITDEPTH=0 \
 		" \
 		ENVIRONMENT=$(ENVIRONMENT) \
+		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0 -DAVIF_LOCAL_LIBSHARPYUV=ON"
+
+$(OUT_NODE_ENC_JS): $(OUT_ENC_JS)
+	mkdir -p $(@D)
+	$(MAKE) \
+		$(HELPER_MAKEFLAGS) \
+		OUT_BUILD_DIR=$(BUILD_DIR)/enc/avif_enc \
+		OUT_JS=$@ \
+		OUT_CPP=$(OUT_ENC_CPP) \
+		LIBAOM_FLAGS="\
+			-DCONFIG_AV1_DECODER=0 \
+			-DCONFIG_MULTITHREAD=0 \
+			-DCONFIG_AV1_HIGHBITDEPTH=0 \
+		" \
+		ENVIRONMENT=node \
 		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0 -DAVIF_LOCAL_LIBSHARPYUV=ON"
 
 # MT-Encoding
@@ -155,7 +170,6 @@ $(LIBSHARPYUV_MT): $(LIBWEBP_DIR)/CMakeLists.txt
 clean:
 	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_ENC_JS) clean
 	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_ENC_MT_JS) clean
-	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_ENC_NODE_JS) clean
-	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_ENC_NODE_MT_JS) clean
 	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_DEC_JS) clean
-	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_DEV_NODE_JS) clean
+	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_NODE_ENC_JS) clean
+	$(RM) $(OUT_NODE_ENC_JS) $(OUT_NODE_ENC_JS:.js=.wasm)

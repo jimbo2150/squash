@@ -2,14 +2,22 @@
 #include <emscripten/val.h>
 
 #include <jxl/decode.h>
-#include "lib/jxl/color_encoding_internal.h"
+
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 #include "skcms.h"
 
 using namespace emscripten;
 
+thread_local const val Uint8Array = val::global("Uint8Array");
 thread_local const val Uint8ClampedArray = val::global("Uint8ClampedArray");
 thread_local const val ImageData = val::global("ImageData");
+
+uint32_t version() {
+  return JxlDecoderVersion();
+}
 
 // R, G, B, A
 #define COMPONENTS_PER_PIXEL 4
@@ -42,7 +50,10 @@ thread_local const val ImageData = val::global("ImageData");
 #define EXPECT_EQ(a, b) EXPECT_TRUE((a) == (b));
 #endif
 
-val decode(std::string data) {
+val decode(val data) {
+  val inputView = Uint8Array.new_(data);
+  std::vector<uint8_t> inputData = convertJSArrayToNumberVector<uint8_t>(inputView);
+
   std::unique_ptr<JxlDecoder,
                   std::integral_constant<decltype(&JxlDecoderDestroy), JxlDecoderDestroy>>
       dec(JxlDecoderCreate(nullptr));
@@ -50,9 +61,7 @@ val decode(std::string data) {
             JxlDecoderSubscribeEvents(
                 dec.get(), JXL_DEC_BASIC_INFO | JXL_DEC_COLOR_ENCODING | JXL_DEC_FULL_IMAGE));
 
-  auto next_in = (const uint8_t*)data.c_str();
-  auto avail_in = data.size();
-  JxlDecoderSetInput(dec.get(), next_in, avail_in);
+  JxlDecoderSetInput(dec.get(), inputData.data(), inputData.size());
   EXPECT_EQ(JXL_DEC_BASIC_INFO, JxlDecoderProcessInput(dec.get()));
   JxlBasicInfo info;
   EXPECT_EQ(JXL_DEC_SUCCESS, JxlDecoderGetBasicInfo(dec.get(), &info));
@@ -62,11 +71,11 @@ val decode(std::string data) {
   EXPECT_EQ(JXL_DEC_COLOR_ENCODING, JxlDecoderProcessInput(dec.get()));
   static const JxlPixelFormat format = {COMPONENTS_PER_PIXEL, JXL_TYPE_FLOAT, JXL_LITTLE_ENDIAN, 0};
   size_t icc_size;
-  EXPECT_EQ(JXL_DEC_SUCCESS, JxlDecoderGetICCProfileSize(dec.get(), &format,
-                                                         JXL_COLOR_PROFILE_TARGET_DATA, &icc_size));
+  EXPECT_EQ(JXL_DEC_SUCCESS,
+            JxlDecoderGetICCProfileSize(dec.get(), JXL_COLOR_PROFILE_TARGET_DATA, &icc_size));
   std::vector<uint8_t> icc_profile(icc_size);
   EXPECT_EQ(JXL_DEC_SUCCESS,
-            JxlDecoderGetColorAsICCProfile(dec.get(), &format, JXL_COLOR_PROFILE_TARGET_DATA,
+            JxlDecoderGetColorAsICCProfile(dec.get(), JXL_COLOR_PROFILE_TARGET_DATA,
                                            icc_profile.data(), icc_profile.size()));
 
   EXPECT_EQ(JXL_DEC_NEED_IMAGE_OUT_BUFFER, JxlDecoderProcessInput(dec.get()));
@@ -96,4 +105,5 @@ val decode(std::string data) {
 
 EMSCRIPTEN_BINDINGS(my_module) {
   function("decode", &decode);
+  function("version", &version);
 }

@@ -1,3 +1,4 @@
 #!/bin/sh -e
 docker build -t squoosh-cpp - < ../cpp.Dockerfile
-docker run -it --rm -v $PWD:/src squoosh-cpp "$@"
+docker run --rm -v $PWD:/src squoosh-cpp "$@"
+node "$(dirname "$0")/generate-version-metadata.mjs"

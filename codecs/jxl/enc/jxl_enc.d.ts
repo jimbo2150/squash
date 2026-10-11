@@ -10,8 +10,9 @@ export interface EncodeOptions {
 }
 
 export interface JXLModule extends EmscriptenWasm.Module {
+  version(): number;
   encode(
-    data: BufferSource,
+    data: Uint8ClampedArray,
     width: number,
     height: number,
     options: EncodeOptions,

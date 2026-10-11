@@ -261,7 +261,11 @@ export default class Options extends Component<Props, State> {
                 this.props.source ? `(${this.props.source.file.name})` : ''
               }`}</option>
               {Object.entries(supportedEncoderMap).map(([type, encoder]) => (
-                <option value={type}>{encoder.meta.label}</option>
+                <option value={type}>
+                  {encoder.version
+                    ? `${encoder.meta.label} (v${encoder.version})`
+                    : encoder.meta.label}
+                </option>
               ))}
             </Select>
           ) : (

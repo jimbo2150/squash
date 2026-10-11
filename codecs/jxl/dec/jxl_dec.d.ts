@@ -1,5 +1,6 @@
 export interface JXLModule extends EmscriptenWasm.Module {
-  decode(data: BufferSource): ImageData | null;
+  version(): number;
+  decode(data: ArrayBuffer): ImageData | null;
 }
 
 declare var moduleFactory: EmscriptenWasm.ModuleFactory<JXLModule>;

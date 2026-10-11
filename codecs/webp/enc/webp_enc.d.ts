@@ -29,6 +29,7 @@ export interface EncodeOptions {
 }
 
 export interface WebPModule extends EmscriptenWasm.Module {
+  version(): number;
   encode(
     data: BufferSource,
     width: number,

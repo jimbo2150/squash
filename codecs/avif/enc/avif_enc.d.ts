@@ -19,6 +19,7 @@ export interface EncodeOptions {
 }
 
 export interface AVIFModule extends EmscriptenWasm.Module {
+  version(): string;
   encode(
     data: BufferSource,
     width: number,

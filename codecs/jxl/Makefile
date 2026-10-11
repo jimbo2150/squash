@@ -1,7 +1,9 @@
 CODEC_URL = https://github.com/libjxl/libjxl.git
-CODEC_VERSION = 9f544641ec83f6abd9da598bdd08178ee8a003e0
+CODEC_VERSION = v0.12.0
 CODEC_DIR = node_modules/jxl
+CODEC_SOURCE_STAMP := $(CODEC_DIR)/.source-$(CODEC_VERSION)
 CODEC_BUILD_ROOT := $(CODEC_DIR)/build
+CODEC_ST_BUILD_DIR := $(CODEC_BUILD_ROOT)/st
 CODEC_MT_BUILD_DIR := $(CODEC_BUILD_ROOT)/mt
 CODEC_MT_SIMD_BUILD_DIR := $(CODEC_BUILD_ROOT)/mt-simd
 ENVIRONMENT = worker
@@ -20,13 +22,13 @@ $(filter dec/%,$(OUT_JS)): dec/jxl_dec.cpp
 
 enc/jxl_node_enc.js dec/jxl_node_dec.js: ENVIRONMENT = node
 
-# For single-threaded build, we compile with threads enabled, but then just don't use them nor link them in.
-enc/jxl_enc.js enc/jxl_node_enc.js enc/jxl_enc_mt.js dec/jxl_dec.js dec/jxl_node_dec.js: CODEC_BUILD_DIR:=$(CODEC_MT_BUILD_DIR)
-enc/jxl_enc_mt_simd.js: CODEC_BUILD_DIR:=$(CODEC_MT_SIMD_BUILD_DIR)
+enc/jxl_enc.js enc/jxl_node_enc.js dec/jxl_dec.js dec/jxl_node_dec.js: CODEC_BUILD_DIR := $(CODEC_ST_BUILD_DIR)
+enc/jxl_enc_mt.js: CODEC_BUILD_DIR := $(CODEC_MT_BUILD_DIR)
+enc/jxl_enc_mt_simd.js: CODEC_BUILD_DIR := $(CODEC_MT_SIMD_BUILD_DIR)
 
-enc/jxl_node_enc.js dec/jxl_node_dec.js enc/jxl_enc.js dec/jxl_dec.js: $(CODEC_MT_BUILD_DIR)/lib/libjxl.a
-enc/jxl_enc_mt.js: $(CODEC_MT_BUILD_DIR)/lib/libjxl.a $(CODEC_MT_BUILD_DIR)/lib/libjxl_threads.a
-enc/jxl_enc_mt_simd.js: $(CODEC_MT_SIMD_BUILD_DIR)/lib/libjxl.a $(CODEC_MT_SIMD_BUILD_DIR)/lib/libjxl_threads.a
+enc/jxl_node_enc.js dec/jxl_node_dec.js enc/jxl_enc.js dec/jxl_dec.js: $(CODEC_ST_BUILD_DIR)/lib/libjxl.a $(CODEC_ST_BUILD_DIR)/lib/libjxl_cms.a
+enc/jxl_enc_mt.js: $(CODEC_MT_BUILD_DIR)/lib/libjxl.a $(CODEC_MT_BUILD_DIR)/lib/libjxl_cms.a $(CODEC_MT_BUILD_DIR)/lib/libjxl_threads.a
+enc/jxl_enc_mt_simd.js: $(CODEC_MT_SIMD_BUILD_DIR)/lib/libjxl.a $(CODEC_MT_SIMD_BUILD_DIR)/lib/libjxl_cms.a $(CODEC_MT_SIMD_BUILD_DIR)/lib/libjxl_threads.a
 
 # Disable errors on deprecated SIMD intrinsics.
 # JPEG-XL & Highway need to catch up, once they do, we can remove this suppression.
@@ -50,22 +52,28 @@ $(OUT_JS):
 		-s EXPORT_ES6=1 \
 		-o $@ \
 		$+ \
-		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlidec-static.a \
-		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlienc-static.a \
-		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlicommon-static.a \
-		$(CODEC_BUILD_DIR)/third_party/libskcms.a \
+		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlidec.a \
+		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlienc.a \
+		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlicommon.a \
 		$(CODEC_BUILD_DIR)/third_party/highway/libhwy.a
 
 %/lib/libjxl.a: %/Makefile
-	$(MAKE) -C $(<D) jxl-static
+	$(MAKE) -C $(<D) jxl
+
+%/lib/libjxl_cms.a: %/Makefile
+	$(MAKE) -C $(<D) jxl_cms
 
 %/lib/libjxl_threads.a: %/Makefile
-	$(MAKE) -C $(<D) jxl_threads-static
+	$(MAKE) -C $(<D) jxl_threads
+
+$(CODEC_ST_BUILD_DIR)/Makefile: CMAKE_FLAGS += -DJPEGXL_ENABLE_WASM_THREADS=OFF
+$(CODEC_MT_BUILD_DIR)/Makefile: CMAKE_FLAGS += -DJPEGXL_ENABLE_WASM_THREADS=ON
+$(CODEC_MT_SIMD_BUILD_DIR)/Makefile: CMAKE_FLAGS += -DJPEGXL_ENABLE_WASM_THREADS=ON
 
 # Enable SIMD on a SIMD build.
-$(CODEC_MT_SIMD_BUILD_DIR)/Makefile: CXXFLAGS+=-msimd128
+$(CODEC_MT_SIMD_BUILD_DIR)/Makefile: CXXFLAGS += -msimd128
 
-%/Makefile: $(CODEC_DIR)/CMakeLists.txt
+%/Makefile: $(CODEC_DIR)/CMakeLists.txt $(CODEC_SOURCE_STAMP)
 	emcmake cmake \
 	$(CMAKE_FLAGS) \
 	-DBUILD_SHARED_LIBS=0 \
@@ -75,19 +83,18 @@ $(CODEC_MT_SIMD_BUILD_DIR)/Makefile: CXXFLAGS+=-msimd128
 	-DCMAKE_CROSSCOMPILING_EMULATOR=node \
 	-B $(@D) \
 	$(<D)
-	emcc -Wall -O3 -o $(CODEC_DIR)/third_party/skcms/skcms.cc.o -I$(CODEC_DIR)/third_party/skcms -c $(CODEC_DIR)/third_party/skcms/skcms.cc
-	llvm-ar rc $(CODEC_BUILD_DIR)/third_party/libskcms.a $(CODEC_DIR)/third_party/skcms/skcms.cc.o
-	rm $(CODEC_DIR)/third_party/skcms/skcms.cc.o
 
-$(CODEC_DIR)/CMakeLists.txt:
-	$(RM) -r $(@D)
-	git init $(@D)
-	git -C $(@D) fetch $(CODEC_URL) $(CODEC_VERSION) --depth 1
-	git -C $(@D) checkout FETCH_HEAD
-	git -C $(@D) submodule update --init --depth 1 --recursive --jobs `nproc`
+$(CODEC_DIR)/CMakeLists.txt: $(CODEC_SOURCE_STAMP)
+	touch $@
+
+$(CODEC_SOURCE_STAMP):
+	$(RM) -r $(CODEC_DIR)
+	git init $(CODEC_DIR)
+	git -C $(CODEC_DIR) fetch $(CODEC_URL) $(CODEC_VERSION) --depth 1
+	git -C $(CODEC_DIR) checkout FETCH_HEAD
+	git -C $(CODEC_DIR) submodule update --init --depth 1 --recursive --jobs `nproc`
+	touch $@
 
 clean:
 	$(RM) $(OUT_JS) $(OUT_WASM) $(OUT_WORKER)
-	$(MAKE) -C $(CODEC_BUILD_DIR) clean
-	$(MAKE) -C $(CODEC_MT_BUILD_DIR) clean
-	$(MAKE) -C $(CODEC_MT_SIMD_BUILD_DIR) clean
+	$(RM) -r $(CODEC_BUILD_ROOT)
