@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 import { promises as fsp } from 'fs';
 import { deleteAsync as del } from 'del';
@@ -34,14 +35,18 @@ function resolveClientAssetUrl({ fileName }) {
   return `new URL(${JSON.stringify(fileNameToURL(fileName))}, location.origin).href`;
 }
 
-function threadedCodecUrlPlugin() {
+function threadedCodecAssetsPlugin() {
   const codecModulePattern =
     /\/codecs\/(?:avif\/enc\/avif_enc|jxl\/enc\/jxl_enc|wp2\/enc\/wp2_enc)_mt(?:_simd)?\.js$/;
   const moduleInitialization = 'Module = Module || {};';
 
+  function shortHash(source) {
+    return createHash('sha256').update(source).digest('hex').slice(0, 8);
+  }
+
   return {
-    name: 'threaded-codec-url',
-    transform(code, id) {
+    name: 'threaded-codec-assets',
+    async transform(code, id) {
       if (!codecModulePattern.test(id)) return null;
       if (!code.includes('Module["mainScriptUrlOrBlob"]')) return null;
 
@@ -50,9 +55,42 @@ function threadedCodecUrlPlugin() {
         throw new Error(`Unexpected Emscripten module format in ${id}`);
       }
 
+      const moduleName = path.basename(id, '.js');
+      const assetDirectory = path.dirname(id);
+      const workerSource = await fsp.readFile(
+        path.join(assetDirectory, `${moduleName}.worker.js`),
+      );
+      const wasmSource = await fsp.readFile(
+        path.join(assetDirectory, `${moduleName}.wasm`),
+      );
+      const workerFileName = `${moduleName}.worker-${shortHash(workerSource)}.js`;
+      const wasmFileName = `${moduleName}-${shortHash(wasmSource)}.wasm`;
+      const esmSource = (await fsp.readFile(id, 'utf8'))
+        .replaceAll(`${moduleName}.worker.js`, workerFileName)
+        .replaceAll(`${moduleName}.wasm`, wasmFileName);
+      const mainScriptFileName = `${moduleName}-${shortHash(esmSource)}.js`;
+      const workerModuleSource = workerSource
+        .toString('utf8')
+        .replaceAll(`./${moduleName}.js`, `./${mainScriptFileName}`);
+      const mainScriptReference = this.emitFile({
+        type: 'asset',
+        fileName: `static/c/${mainScriptFileName}`,
+        source: esmSource,
+      });
+      const workerReference = this.emitFile({
+        type: 'asset',
+        fileName: `static/c/${workerFileName}`,
+        source: workerModuleSource,
+      });
+      const wasmReference = this.emitFile({
+        type: 'asset',
+        fileName: `static/c/${wasmFileName}`,
+        source: wasmSource,
+      });
+
       return code.replace(
         moduleInitialization,
-        `${moduleInitialization}\n  Module["mainScriptUrlOrBlob"] = _scriptDir;`,
+        `${moduleInitialization}\n  Module["mainScriptUrlOrBlob"] = import.meta.ROLLUP_FILE_URL_${mainScriptReference};\n  Module["pthreadAssets"] = [import.meta.ROLLUP_FILE_URL_${workerReference}, import.meta.ROLLUP_FILE_URL_${wasmReference}];`,
       );
     },
   };
@@ -135,7 +173,7 @@ export default async function ({ watch }) {
           plugins: [
             { resolveFileUrl: resolveClientAssetUrl },
             importMetaAssets(),
-            threadedCodecUrlPlugin(),
+            threadedCodecAssetsPlugin(),
             OMT({ loader: await omtLoaderPromise }),
             serviceWorkerPlugin({
               output: 'static/serviceworker.js',
