@@ -6,6 +6,7 @@ import { deleteAsync as del } from 'del';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
+import { minify } from 'terser';
 import OMT from '@surma/rollup-plugin-off-main-thread';
 import replace from '@rollup/plugin-replace';
 import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
@@ -65,9 +66,14 @@ function threadedCodecAssetsPlugin() {
       );
       const workerFileName = `${moduleName}.worker-${shortHash(workerSource)}.js`;
       const wasmFileName = `${moduleName}-${shortHash(wasmSource)}.wasm`;
-      const esmSource = (await fsp.readFile(id, 'utf8'))
+      const rewrittenEsmSource = (await fsp.readFile(id, 'utf8'))
         .replaceAll(`${moduleName}.worker.js`, workerFileName)
         .replaceAll(`${moduleName}.wasm`, wasmFileName);
+      const minifiedEsm = await minify(rewrittenEsmSource, { module: true });
+      if (!minifiedEsm.code) {
+        throw new Error(`Failed to minify ESM pthread module ${id}`);
+      }
+      const esmSource = minifiedEsm.code;
       const mainScriptFileName = `${moduleName}-${shortHash(esmSource)}.js`;
       const workerModuleSource = workerSource
         .toString('utf8')

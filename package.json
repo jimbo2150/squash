@@ -46,6 +46,7 @@
     "prettier": "^3.9.10",
     "rollup": "^4.64.5",
     "serve": "^14.2.6",
+    "terser": "^5.51.2",
     "typescript": "^6.0.3",
     "wasm-feature-detect": "^1.9.0"
   },
