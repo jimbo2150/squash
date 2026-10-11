@@ -7,7 +7,11 @@ RUN wget -qO- https://github.com/rustwasm/wasm-pack/releases/download/v0.12.1/wa
 FROM $RUST_IMG AS rust
 ARG RUST_IMG
 RUN rustup target add wasm32-unknown-unknown
-RUN case $RUST_IMG in rustlang/rust@*) rustup component add rust-src; esac
+RUN case $RUST_IMG in rust:1.98.1) \
+      rustup toolchain install nightly-2025-11-15 --profile minimal --target wasm32-unknown-unknown --component rust-src \
+      && cd "$(rustup run nightly-2025-11-15 rustc --print sysroot)/lib/rustlib/src/rust/library" \
+      && rustup run nightly-2025-11-15 cargo generate-lockfile;; \
+    esac
 COPY --from=wasm-tools /emsdk/upstream/bin/wasm-opt /emsdk/upstream/bin/clang /usr/local/bin/
 COPY --from=wasm-tools /emsdk/upstream/lib/ /usr/local/lib/
 COPY --from=wasm-tools /emsdk/upstream/emscripten/system/include/libc/ /wasm32/include/

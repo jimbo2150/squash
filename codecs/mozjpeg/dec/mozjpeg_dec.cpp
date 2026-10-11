@@ -1,6 +1,6 @@
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
-#include "config.h"
+#include "jconfig.h"
 #include "jpeglib.h"
 
 extern "C" {

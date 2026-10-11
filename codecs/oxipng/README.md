@@ -1,5 +1,19 @@
 # OxiPNG
 
 - Source: <https://github.com/shssoichiro/oxipng>
-- Version: v9.0.0
+- Version: v10.2.1
 - License: MIT
+
+## Build
+
+From the repository root, run:
+
+```sh
+npm --prefix codecs/oxipng run build
+```
+
+The build generates both the single-threaded and parallel WebAssembly packages. The default build uses Rust 1.98.1 stable. The parallel build uses pinned nightly-2025-11-15 because `wasm-bindgen-rayon` requires nightly `build-std` to rebuild the WebAssembly standard library with atomics enabled.
+
+The release profile disables `wasm-opt`: the optimizer bundled with Emscripten 2.0.8 does not support the multiple tables emitted by the current bindings. Only re-enable it after upgrading and validating the optimizer against both generated packages.
+
+After changing OxiPNG or its bindings, run the repository-root `npm run build` to regenerate codec version metadata and verify that the application bundles the artifacts.

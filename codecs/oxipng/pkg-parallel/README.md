@@ -1,5 +1,5 @@
 # OxiPNG
 
 - Source: <https://github.com/shssoichiro/oxipng>
-- Version: v9.0.0
+- Version: v10.2.1
 - License: MIT

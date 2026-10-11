@@ -14,6 +14,16 @@ These container wrappers require Docker. Individual Makefiles may download pinne
 
 Build artifacts such as generated `.js`, `.wasm`, and declaration files appear alongside codec sources in the relevant subdirectories (for example, [`codecs/webp/enc/`](../codecs/webp/enc/)). Follow each codec's existing conventions when deciding which outputs to regenerate and include in a change. The encoder selectors also show available version labels; see [codec version generation](codec-versions.md) for their sources and update workflow.
 
+### OxiPNG
+
+Build OxiPNG's single-threaded and parallel packages with `npm --prefix codecs/oxipng run build`. The default package uses the Rust 1.98.1 stable toolchain. The parallel package is the exception: it uses pinned nightly-2025-11-15 because `wasm-bindgen-rayon` requires nightly `build-std` to compile an atomics-enabled WebAssembly standard library. The build image installs both toolchains.
+
+The release profile skips `wasm-opt` because the optimizer bundled with the pinned Emscripten 2.0.8 image cannot process the generated module's multiple tables. If the optimizer is upgraded, verify it accepts both OxiPNG variants before enabling optimization again. See the [OxiPNG README](../codecs/oxipng/README.md) for the codec-local build notes.
+
+### MozJPEG
+
+Build MozJPEG with `npm --prefix codecs/mozjpeg run build`. Its Makefile downloads the pinned v4.1.1 source and builds the static library with CMake through the Emscripten Docker wrapper. Rebuild this codec after changing its upstream version or wrapper, then run the root build to verify the generated artifacts are bundled.
+
 ## Connect a codec to the app
 
 For an encoder, trace the WebP example through these layers:

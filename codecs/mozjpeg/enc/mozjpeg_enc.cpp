@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "config.h"
+#include "jconfig.h"
 #include "jpeglib.h"
 
 extern "C" {
@@ -40,7 +40,7 @@ struct MozJpegOptions {
 };
 
 int version() {
-  char buffer[] = xstr(MOZJPEG_VERSION);
+  char buffer[] = xstr(LIBJPEG_TURBO_VERSION);
   int version = 0;
   int last_index = 0;
   for (int i = 0; i < strlen(buffer); i++) {
