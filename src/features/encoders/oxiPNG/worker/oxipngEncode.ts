@@ -15,6 +15,7 @@ import { EncodeOptions } from '../shared/meta';
 import checkThreadsSupport from 'worker-shared/supports-wasm-threads';
 
 async function initMT() {
+  console.log('Using multi-threaded OxiPNG encoder');
   const {
     default: init,
     initThreadPool,
@@ -26,6 +27,7 @@ async function initMT() {
 }
 
 async function initST() {
+  console.log('Using single-threaded OxiPNG encoder');
   const { default: init, optimise } =
     await import('codecs/oxipng/pkg/squash_oxipng');
   await init();

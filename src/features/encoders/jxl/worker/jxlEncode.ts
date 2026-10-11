@@ -24,6 +24,7 @@ let emscriptenModule: Promise<JXLModule>;
 
 async function init() {
   if (await checkThreadsSupport()) {
+    console.log('Using multi-threaded JXL encoder');
     if (await simd()) {
       const jxlEncoder = await import('codecs/jxl/enc/jxl_enc_mt_simd');
       return initEmscriptenModule(jxlEncoder.default);
@@ -31,6 +32,7 @@ async function init() {
     const jxlEncoder = await import('codecs/jxl/enc/jxl_enc_mt');
     return initEmscriptenModule(jxlEncoder.default);
   }
+  console.log('Using single-threaded JXL encoder');
   const jxlEncoder = await import('codecs/jxl/enc/jxl_enc');
   return initEmscriptenModule(jxlEncoder.default);
 }

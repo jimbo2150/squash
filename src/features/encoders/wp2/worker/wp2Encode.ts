@@ -24,6 +24,7 @@ let emscriptenModule: Promise<WP2Module>;
 
 async function init() {
   if (await checkThreadsSupport()) {
+    console.log('Using multi-threaded WP2 encoder');
     if (await simd()) {
       const wp2Encoder = await import('codecs/wp2/enc/wp2_enc_mt_simd');
       return initEmscriptenModule(wp2Encoder.default);
@@ -31,6 +32,7 @@ async function init() {
     const wp2Encoder = await import('codecs/wp2/enc/wp2_enc_mt');
     return initEmscriptenModule(wp2Encoder.default);
   }
+  console.log('Using single-threaded WP2 encoder');
   const wp2Encoder = await import('codecs/wp2/enc/wp2_enc');
   return initEmscriptenModule(wp2Encoder.default);
 }

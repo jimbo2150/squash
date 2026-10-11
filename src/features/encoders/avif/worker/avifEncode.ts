@@ -22,9 +22,11 @@ let emscriptenModule: Promise<AVIFModule>;
 
 async function init() {
   if (await checkThreadsSupport()) {
+    console.log('Using multi-threaded AVIF encoder');
     const avifEncoder = await import('codecs/avif/enc/avif_enc_mt');
     return initEmscriptenModule<AVIFModule>(avifEncoder.default);
   }
+  console.log('Using single-threaded AVIF encoder');
   const avifEncoder = await import('codecs/avif/enc/avif_enc.js');
   return initEmscriptenModule(avifEncoder.default);
 }
