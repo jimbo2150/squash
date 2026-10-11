@@ -12,7 +12,7 @@ OUT_JS = enc/jxl_enc.js enc/jxl_enc_mt.js enc/jxl_enc_mt_simd.js dec/jxl_dec.js 
 OUT_WASM = $(OUT_JS:.js=.wasm)
 OUT_WORKER = $(OUT_JS:.js=.worker.js)
 MAKEFILE_DEPS := Makefile
-ENC_LINK_FLAGS = -s STACK_SIZE=8MB -s MAXIMUM_MEMORY=4GB
+ENC_LINK_FLAGS = -s TOTAL_STACK=8MB -s MAXIMUM_MEMORY=4GB
 
 .PHONY: all clean
 
