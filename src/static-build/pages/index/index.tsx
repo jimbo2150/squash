@@ -32,8 +32,18 @@ const Index: FunctionalComponent<Props> = () => (
         name="description"
         content="Squash is the ultimate image optimizer that allows you to compress and compare images with different codecs in your browser."
       />
-      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@SquashApp" />
+      <meta name="twitter:title" content="Squash" />
+      <meta
+        name="twitter:description"
+        content="Squash is the ultimate image optimizer that allows you to compress and compare images with different codecs in your browser."
+      />
+      <meta name="twitter:image" content={`${siteOrigin}${ogImage}`} />
+      <meta
+        name="twitter:image:alt"
+        content="An image being compressed between the piston and base of a hydraulic press."
+      />
       <meta property="og:title" content="Squash" />
       <meta property="og:type" content="website" />
       <meta property="og:image" content={`${siteOrigin}${ogImage}`} />
@@ -42,14 +52,14 @@ const Index: FunctionalComponent<Props> = () => (
         content={`${siteOrigin}${ogImage}`}
       />
       <meta property="og:image:type" content="image/png" />
-      <meta property="og:image:width" content="500" />
-      <meta property="og:image:height" content="500" />
+      <meta property="og:image:width" content="1024" />
+      <meta property="og:image:height" content="1024" />
       <meta
         property="og:image:alt"
-        content="A cartoon of a hand squeezing an image file on a dark background."
+        content="An image being compressed between the piston and base of a hydraulic press."
       />
       <meta
-        name="og:description"
+        property="og:description"
         content="Squash is the ultimate image optimizer that allows you to compress and compare images with different codecs in your browser."
       />
       <meta
