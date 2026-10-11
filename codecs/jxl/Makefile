@@ -11,15 +11,18 @@ ENVIRONMENT = worker
 OUT_JS = enc/jxl_enc.js enc/jxl_enc_mt.js enc/jxl_enc_mt_simd.js dec/jxl_dec.js enc/jxl_node_enc.js dec/jxl_node_dec.js
 OUT_WASM = $(OUT_JS:.js=.wasm)
 OUT_WORKER = $(OUT_JS:.js=.worker.js)
+MAKEFILE_DEPS := Makefile
+ENC_LINK_FLAGS = -s STACK_SIZE=8MB -s MAXIMUM_MEMORY=4GB
 
 .PHONY: all clean
 
 all: $(OUT_JS)
 
 # Define dependencies for all variations of build artifacts.
-$(filter enc/%,$(OUT_JS)): enc/jxl_enc.cpp
+$(filter enc/%,$(OUT_JS)): enc/jxl_enc.cpp $(MAKEFILE_DEPS)
 $(filter dec/%,$(OUT_JS)): dec/jxl_dec.cpp
 
+enc/jxl_enc.js enc/jxl_enc_mt.js enc/jxl_enc_mt_simd.js enc/jxl_node_enc.js: LINK_EXTRA_FLAGS = $(ENC_LINK_FLAGS)
 enc/jxl_node_enc.js dec/jxl_node_dec.js: ENVIRONMENT = node
 
 enc/jxl_enc.js enc/jxl_node_enc.js dec/jxl_dec.js dec/jxl_node_dec.js: CODEC_BUILD_DIR := $(CODEC_ST_BUILD_DIR)
@@ -41,6 +44,7 @@ $(OUT_JS):
 	$(CXX) \
 		$(CXXFLAGS) \
 		$(LDFLAGS) \
+		$(LINK_EXTRA_FLAGS) \
 		-I $(CODEC_DIR) \
 		-I $(CODEC_DIR)/lib \
 		-I $(CODEC_DIR)/lib/include \
@@ -51,7 +55,7 @@ $(OUT_JS):
 		-s ENVIRONMENT=$(ENVIRONMENT) \
 		-s EXPORT_ES6=1 \
 		-o $@ \
-		$+ \
+		$(filter-out $(MAKEFILE_DEPS),$+) \
 		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlidec.a \
 		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlienc.a \
 		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlicommon.a \

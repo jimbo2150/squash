@@ -324,14 +324,18 @@ export default class Compress extends Component<Props, State> {
   private mainAbortController = new AbortController();
   // And again one for each side
   private sideAbortControllers = [new AbortController(), new AbortController()];
-  /** For debouncing calls to updateImage for each side. */
   private updateImageTimeout?: number;
+  private updateImageRequestId = 0;
+  private mainUpdateRequestId = 0;
+  private pendingMainUpdate = false;
+  private activeUpdateImage?: Promise<void>;
+  private unmounted = false;
 
   constructor(props: Props) {
     super(props);
     this.widthQuery.addListener(this.onMobileWidthChange);
     this.sourceFile = props.file;
-    this.queueUpdateImage({ immediate: true });
+    this.queueUpdateImage({ immediate: true, mainUpdate: true });
 
     import('../sw-bridge').then(({ mainAppLoaded }) => mainAppLoaded());
   }
@@ -384,11 +388,12 @@ export default class Compress extends Component<Props, State> {
   componentWillReceiveProps(nextProps: Props): void {
     if (nextProps.file !== this.props.file) {
       this.sourceFile = nextProps.file;
-      this.queueUpdateImage({ immediate: true });
     }
   }
 
   componentWillUnmount(): void {
+    this.unmounted = true;
+    clearTimeout(this.updateImageTimeout);
     updateDocumentTitle({ loading: false });
     this.widthQuery.removeListener(this.onMobileWidthChange);
     this.mainAbortController.abort();
@@ -413,7 +418,29 @@ export default class Compress extends Component<Props, State> {
         filename: this.state.source?.file.name,
       });
     }
-    this.queueUpdateImage();
+
+    const fileChanged = prevProps.file !== this.props.file;
+    const mainSettingsChanged =
+      fileChanged ||
+      prevState.preprocessorState !== this.state.preprocessorState;
+    const sideSettingsChanged = prevState.sides.some((previousSide, index) => {
+      const nextSide = this.state.sides[index];
+      return (
+        previousSide.latestSettings.encoderState !==
+          nextSide.latestSettings.encoderState ||
+        !processorStateEquivalent(
+          previousSide.latestSettings.processorState,
+          nextSide.latestSettings.processorState,
+        )
+      );
+    });
+
+    if (mainSettingsChanged || sideSettingsChanged) {
+      this.queueUpdateImage({
+        immediate: fileChanged,
+        mainUpdate: mainSettingsChanged,
+      });
+    }
   }
 
   private onCopyToOtherClick = async (index: 0 | 1) => {
@@ -568,21 +595,75 @@ export default class Compress extends Component<Props, State> {
     }));
   };
 
-  /**
-   * Debounce the heavy lifting of updateImage.
-   * Otherwise, the thrashing causes jank, and sometimes crashes iOS Safari.
-   */
-  private queueUpdateImage({ immediate }: { immediate?: boolean } = {}): void {
-    // Call updateImage after this delay, unless queueUpdateImage is called
-    // again, in which case the timeout is reset.
-    const delay = 100;
-
+  private queueUpdateImage({
+    immediate,
+    mainUpdate,
+  }: { immediate?: boolean; mainUpdate?: boolean } = {}): void {
+    const delay = 250;
+    const requestId = ++this.updateImageRequestId;
+    if (mainUpdate) this.mainUpdateRequestId++;
+    const mainRequestId = this.mainUpdateRequestId;
+    this.pendingMainUpdate ||= !!mainUpdate;
     clearTimeout(this.updateImageTimeout);
+
+    const startUpdate = () => {
+      this.updateImageTimeout = undefined;
+      const abortMain = this.pendingMainUpdate;
+      this.pendingMainUpdate = false;
+      void this.runQueuedUpdateImage(requestId, mainRequestId, abortMain).catch(
+        () => {},
+      );
+    };
+
     if (immediate) {
-      this.updateImage();
+      startUpdate();
     } else {
-      this.updateImageTimeout = setTimeout(() => this.updateImage(), delay);
+      this.updateImageTimeout = window.setTimeout(startUpdate, delay);
     }
+  }
+
+  private async runQueuedUpdateImage(
+    requestId: number,
+    mainRequestId: number,
+    abortMain: boolean,
+  ): Promise<void> {
+    if (this.unmounted) return;
+
+    for (const controller of this.sideAbortControllers) {
+      controller.abort();
+    }
+    if (abortMain) this.mainAbortController.abort();
+
+    if (this.activeUpdateImage) {
+      await this.activeUpdateImage.catch(() => {});
+    }
+
+    if (
+      this.unmounted ||
+      requestId !== this.updateImageRequestId ||
+      mainRequestId !== this.mainUpdateRequestId
+    ) {
+      return;
+    }
+
+    const update = this.updateImage(requestId, mainRequestId);
+    this.activeUpdateImage = update;
+    try {
+      await update;
+    } catch {
+    } finally {
+      if (this.activeUpdateImage === update) {
+        this.activeUpdateImage = undefined;
+      }
+    }
+  }
+
+  private isCurrentUpdate(requestId: number): boolean {
+    return !this.unmounted && requestId === this.updateImageRequestId;
+  }
+
+  private isCurrentMainUpdate(requestId: number): boolean {
+    return !this.unmounted && requestId === this.mainUpdateRequestId;
   }
 
   private sourceFile: File;
@@ -598,7 +679,10 @@ export default class Compress extends Component<Props, State> {
    * never gets partially called. Instead, it looks at the current state, and
    * decides which steps can be skipped, and which can be cached.
    */
-  private async updateImage() {
+  private async updateImage(
+    requestId: number,
+    mainRequestId: number,
+  ): Promise<void> {
     const currentState = this.state;
 
     // State of the last completed job, or ongoing job
@@ -630,7 +714,8 @@ export default class Compress extends Component<Props, State> {
     }));
 
     // Figure out what needs doing:
-    const needsDecoding = latestMainJobState.file != mainJobState.file;
+    const needsDecoding =
+      latestMainJobState.file != mainJobState.file || !currentState.source;
     const needsPreprocessing =
       needsDecoding ||
       latestMainJobState.preprocessorState !== mainJobState.preprocessorState;
@@ -671,7 +756,19 @@ export default class Compress extends Component<Props, State> {
       }
     }
 
-    if (!jobNeeded) return;
+    if (!jobNeeded) {
+      this.setState((state) => {
+        if (!this.isCurrentUpdate(requestId)) return {};
+        if (!state.loading && !state.sides.some((side) => side.loading)) {
+          return {};
+        }
+        const sides = state.sides.map((side) =>
+          side.loading ? { ...side, loading: false } : side,
+        ) as [Side, Side];
+        return { loading: false, sides };
+      });
+      return;
+    }
 
     const mainSignal = this.mainAbortController.signal;
     const sideSignals = this.sideAbortControllers.map((ac) => ac.signal);
@@ -683,6 +780,7 @@ export default class Compress extends Component<Props, State> {
     if (needsDecoding) {
       try {
         assertSignal(mainSignal);
+        if (!this.isCurrentMainUpdate(mainRequestId)) return;
         this.setState({
           source: undefined,
           loading: true,
@@ -705,7 +803,9 @@ export default class Compress extends Component<Props, State> {
 
         // Set default resize values
         this.setState((currentState) => {
-          if (mainSignal.aborted) return {};
+          if (mainSignal.aborted || !this.isCurrentMainUpdate(mainRequestId)) {
+            return {};
+          }
           const sides = currentState.sides.map((side) => {
             const resizeState: Partial<ProcessorState['resize']> = {
               width: decoded.width,
@@ -723,7 +823,14 @@ export default class Compress extends Component<Props, State> {
           return { sides };
         });
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
+        if (
+          (err instanceof Error && err.name === 'AbortError') ||
+          !this.isCurrentMainUpdate(mainRequestId)
+        ) {
+          return;
+        }
+        if (this.activeMainJob === mainJobState) this.activeMainJob = undefined;
+        this.setState({ loading: false });
         this.props.showSnack(`Source decoding error: ${err}`);
         throw err;
       }
@@ -737,6 +844,7 @@ export default class Compress extends Component<Props, State> {
     if (needsPreprocessing) {
       try {
         assertSignal(mainSignal);
+        if (!this.isCurrentMainUpdate(mainRequestId)) return;
         this.setState({
           loading: true,
         });
@@ -758,7 +866,9 @@ export default class Compress extends Component<Props, State> {
 
         // Update state for process completion, including intermediate render
         this.setState((currentState) => {
-          if (mainSignal.aborted) return {};
+          if (mainSignal.aborted || !this.isCurrentMainUpdate(mainRequestId)) {
+            return {};
+          }
           let newState: State = {
             ...currentState,
             loading: false,
@@ -781,7 +891,13 @@ export default class Compress extends Component<Props, State> {
           return newState;
         });
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
+        if (
+          (err instanceof Error && err.name === 'AbortError') ||
+          !this.isCurrentMainUpdate(mainRequestId)
+        ) {
+          return;
+        }
+        if (this.activeMainJob === mainJobState) this.activeMainJob = undefined;
         this.setState({ loading: false });
         this.props.showSnack(`Preprocessing error: ${err}`);
         throw err;
@@ -790,132 +906,154 @@ export default class Compress extends Component<Props, State> {
       source = currentState.source!;
     }
 
-    // That's the main part of the job done.
+    if (!this.isCurrentMainUpdate(mainRequestId)) return;
+
     this.activeMainJob = undefined;
 
     // Allow side jobs to happen in parallel
-    sideWorksNeeded.forEach(async (sideWorkNeeded, sideIndex) => {
-      try {
-        // If processing is true, encoding is always true.
-        if (!sideWorkNeeded.encoding) return;
+    await Promise.all(
+      sideWorksNeeded.map(async (sideWorkNeeded, sideIndex) => {
+        try {
+          // If processing is true, encoding is always true.
+          if (!sideWorkNeeded.encoding) return;
 
-        const signal = sideSignals[sideIndex];
-        const jobState = sideJobStates[sideIndex];
-        const workerBridge = this.workerBridges[sideIndex];
-        let file: File;
-        let data: ImageData;
-        let processed: ImageData | undefined = undefined;
+          const signal = sideSignals[sideIndex];
+          const jobState = sideJobStates[sideIndex];
+          const workerBridge = this.workerBridges[sideIndex];
+          let file: File;
+          let data: ImageData;
+          let processed: ImageData | undefined = undefined;
 
-        // If there's no encoder state, this is "original image", which also
-        // doesn't allow processing.
-        if (!jobState.encoderState) {
-          file = source.file;
-          data = source.preprocessed;
-        } else {
-          const cacheResult = this.encodeCache.match(
-            source.preprocessed,
-            jobState.processorState,
-            jobState.encoderState,
-          );
-
-          if (cacheResult) {
-            ({ file, processed, data } = cacheResult);
+          // If there's no encoder state, this is "original image", which also
+          // doesn't allow processing.
+          if (!jobState.encoderState) {
+            file = source.file;
+            data = source.preprocessed;
           } else {
-            // Set loading state for this side
-            this.setState((currentState) => {
-              if (signal.aborted) return {};
-              const sides = cleanMerge(currentState.sides, sideIndex, {
-                loading: true,
-              });
-              return { sides };
-            });
+            const cacheResult = this.encodeCache.match(
+              source.preprocessed,
+              jobState.processorState,
+              jobState.encoderState,
+            );
 
-            if (sideWorkNeeded.processing) {
-              processed = await processImage(
-                signal,
-                source,
-                jobState.processorState,
-                workerBridge,
-              );
-
-              // Update state for process completion, including intermediate render
+            if (cacheResult) {
+              ({ file, processed, data } = cacheResult);
+            } else {
+              // Set loading state for this side
               this.setState((currentState) => {
-                if (signal.aborted) return {};
-                const currentSide = currentState.sides[sideIndex];
-                const side: Side = {
-                  ...currentSide,
-                  processed,
-                  // Intermediate render
-                  data: processed,
-                  encodedSettings: {
-                    ...currentSide.encodedSettings,
-                    processorState: jobState.processorState,
-                  },
-                };
-                const sides = cleanSet(currentState.sides, sideIndex, side);
+                if (signal.aborted || !this.isCurrentUpdate(requestId))
+                  return {};
+                const sides = cleanMerge(currentState.sides, sideIndex, {
+                  loading: true,
+                });
                 return { sides };
               });
-            } else {
-              processed = currentState.sides[sideIndex].processed!;
+
+              if (sideWorkNeeded.processing) {
+                processed = await processImage(
+                  signal,
+                  source,
+                  jobState.processorState,
+                  workerBridge,
+                );
+
+                // Update state for process completion, including intermediate render
+                this.setState((currentState) => {
+                  if (signal.aborted || !this.isCurrentUpdate(requestId))
+                    return {};
+                  const currentSide = currentState.sides[sideIndex];
+                  const side: Side = {
+                    ...currentSide,
+                    processed,
+                    // Intermediate render
+                    data: processed,
+                    encodedSettings: {
+                      ...currentSide.encodedSettings,
+                      processorState: jobState.processorState,
+                    },
+                  };
+                  const sides = cleanSet(currentState.sides, sideIndex, side);
+                  return { sides };
+                });
+              } else {
+                processed = currentState.sides[sideIndex].processed!;
+              }
+
+              file = await compressImage(
+                signal,
+                processed,
+                jobState.encoderState,
+                source.file.name,
+                workerBridge,
+              );
+              data = await decodeImage(signal, file, workerBridge);
+
+              this.encodeCache.add({
+                data,
+                processed,
+                file,
+                preprocessed: source.preprocessed,
+                encoderState: jobState.encoderState,
+                processorState: jobState.processorState,
+              });
+            }
+          }
+
+          this.setState((currentState) => {
+            if (signal.aborted || !this.isCurrentUpdate(requestId)) return {};
+            const currentSide = currentState.sides[sideIndex];
+
+            if (currentSide.downloadUrl) {
+              URL.revokeObjectURL(currentSide.downloadUrl);
             }
 
-            file = await compressImage(
-              signal,
-              processed,
-              jobState.encoderState,
-              source.file.name,
-              workerBridge,
-            );
-            data = await decodeImage(signal, file, workerBridge);
-
-            this.encodeCache.add({
+            const side: Side = {
+              ...currentSide,
               data,
-              processed,
               file,
-              preprocessed: source.preprocessed,
-              encoderState: jobState.encoderState,
-              processorState: jobState.processorState,
+              downloadUrl: URL.createObjectURL(file),
+              loading: false,
+              processed,
+              encodedSettings: {
+                processorState: jobState.processorState,
+                encoderState: jobState.encoderState,
+              },
+            };
+            const sides = cleanSet(currentState.sides, sideIndex, side);
+            return { sides };
+          });
+        } catch (err) {
+          if (
+            (err instanceof Error && err.name === 'AbortError') ||
+            !this.isCurrentUpdate(requestId)
+          ) {
+            return;
+          }
+          this.setState((currentState) => {
+            if (!this.isCurrentUpdate(requestId)) return {};
+            const sides = cleanMerge(currentState.sides, sideIndex, {
+              loading: false,
             });
+            return { sides };
+          });
+          this.props.showSnack(`Processing error: ${err}`);
+        } finally {
+          if (this.activeSideJobs[sideIndex] === sideJobStates[sideIndex]) {
+            this.activeSideJobs[sideIndex] = undefined;
+            if (!this.unmounted) {
+              this.setState((currentState) => {
+                const side = currentState.sides[sideIndex];
+                if (!side.loading) return {};
+                const sides = cleanMerge(currentState.sides, sideIndex, {
+                  loading: false,
+                });
+                return { sides };
+              });
+            }
           }
         }
-
-        this.setState((currentState) => {
-          if (signal.aborted) return {};
-          const currentSide = currentState.sides[sideIndex];
-
-          if (currentSide.downloadUrl) {
-            URL.revokeObjectURL(currentSide.downloadUrl);
-          }
-
-          const side: Side = {
-            ...currentSide,
-            data,
-            file,
-            downloadUrl: URL.createObjectURL(file),
-            loading: false,
-            processed,
-            encodedSettings: {
-              processorState: jobState.processorState,
-              encoderState: jobState.encoderState,
-            },
-          };
-          const sides = cleanSet(currentState.sides, sideIndex, side);
-          return { sides };
-        });
-
-        this.activeSideJobs[sideIndex] = undefined;
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        this.setState((currentState) => {
-          const sides = cleanMerge(currentState.sides, sideIndex, {
-            loading: false,
-          });
-          return { sides };
-        });
-        this.props.showSnack(`Processing error: ${err}`);
-        throw err;
-      }
-    });
+      }),
+    );
   }
 
   render(
