@@ -23,6 +23,7 @@ LIBAOM_OUT := $(LIBAOM_BUILD_DIR)/libaom.a
 
 OUT_WASM = $(OUT_JS:.js=.wasm)
 OUT_WORKER=$(OUT_JS:.js=.worker.js)
+AVIF_THREAD_FLAGS = $(if $(findstring -pthread,$(OUT_FLAGS)),-pthread,)
 
 .PHONY: all clean
 
@@ -35,35 +36,42 @@ $(OUT_JS): $(LIBSHARPYUV)
 $(CODEC_OUT): $(LIBSHARPYUV)
 endif
 
-$(OUT_JS): $(OUT_CPP) $(LIBAOM_OUT) $(CODEC_OUT)
+$(OUT_JS): $(OUT_CPP) $(CODEC_OUT) $(LIBAOM_OUT)
 	$(CXX) \
 		-I $(CODEC_DIR)/include \
 		$(CXXFLAGS) \
 		$(LDFLAGS) \
 		$(OUT_FLAGS) \
 		--bind \
-		-s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+		-s ERROR_ON_UNDEFINED_SYMBOLS=1 \
 		-s ENVIRONMENT=$(ENVIRONMENT) \
 		-s EXPORT_ES6=1 \
 		-o $@ \
 		$+
 
-$(CODEC_OUT): $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_OUT)
+$(CODEC_OUT): $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_OUT) helper.Makefile
 	emcmake cmake \
-		-DCMAKE_LIBRARY_PATH=$(LIBSHARPYUV_BUILD_DIR) \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DBUILD_SHARED_LIBS=0 \
-		-DAVIF_CODEC_AOM=1 \
+		-DCMAKE_C_FLAGS="$(CFLAGS) -s SUPPORT_LONGJMP=emscripten $(AVIF_THREAD_FLAGS)" \
+		-DCMAKE_CXX_FLAGS="$(CXXFLAGS) -s SUPPORT_LONGJMP=emscripten $(AVIF_THREAD_FLAGS)" \
+		-DAVIF_CODEC_AOM=SYSTEM \
+		-DAVIF_LIBSHARPYUV=SYSTEM \
+		-DAVIF_LIBYUV=OFF \
 		-DAOM_LIBRARY=$(LIBAOM_OUT) \
 		-DAOM_INCLUDE_DIR=$(LIBAOM_DIR) \
+		-DLIBSHARPYUV_LIBRARY=$(LIBSHARPYUV) \
+		-DLIBSHARPYUV_INCLUDE_DIR=$(CODEC_DIR)/ext/libwebp \
 		$(LIBAVIF_FLAGS) \
 		-B $(CODEC_BUILD_DIR) \
 		$(CODEC_DIR) && \
 	$(MAKE) -C $(CODEC_BUILD_DIR)
 
-$(LIBAOM_OUT): $(LIBAOM_DIR)/CMakeLists.txt
+$(LIBAOM_OUT): $(LIBAOM_DIR)/CMakeLists.txt helper.Makefile
 	emcmake cmake \
 		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_C_FLAGS="$(filter-out -flto,$(CFLAGS)) -s SUPPORT_LONGJMP=emscripten $(AVIF_THREAD_FLAGS)" \
+		-DCMAKE_CXX_FLAGS="$(filter-out -flto,$(CXXFLAGS)) -s SUPPORT_LONGJMP=emscripten $(AVIF_THREAD_FLAGS)" \
 		-DENABLE_CCACHE=0 \
 		-DAOM_TARGET_CPU=generic \
 		-DENABLE_DOCS=0 \

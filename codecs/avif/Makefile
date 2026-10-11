@@ -1,21 +1,27 @@
 # using libavif from https://github.com/AOMediaCodec/libavif
-LIBAVIF_URL = https://github.com/AOMediaCodec/libavif/archive/refs/tags/v1.0.1.tar.gz
-LIBAVIF_PACKAGE = node_modules/libavif.tar.gz
+LIBAVIF_VERSION = 1.4.2
+LIBAVIF_URL = https://github.com/AOMediaCodec/libavif/archive/refs/tags/v$(LIBAVIF_VERSION).tar.gz
+LIBAVIF_PACKAGE = node_modules/libavif-v$(LIBAVIF_VERSION).tar.gz
 
 # using libaom from https://aomedia.googlesource.com/aom
-LIBAOM_URL = https://aomedia.googlesource.com/aom/+archive/v3.7.0.tar.gz
-LIBAOM_PACKAGE = node_modules/libaom.tar.gz
+LIBAOM_VERSION = 3.14.1
+LIBAOM_URL = https://aomedia.googlesource.com/aom/+archive/v$(LIBAOM_VERSION).tar.gz
+LIBAOM_PACKAGE = node_modules/libaom-v$(LIBAOM_VERSION).tar.gz
 
 export CODEC_DIR = node_modules/libavif
 export BUILD_DIR = node_modules/build
 export LIBAOM_DIR = node_modules/libaom
+LIBAVIF_SOURCE_STAMP := $(CODEC_DIR)/.source-v$(LIBAVIF_VERSION)
+LIBAOM_SOURCE_STAMP := $(LIBAOM_DIR)/.source-v$(LIBAOM_VERSION)
 
 override CFLAGS += "-Wno-unused-macros"
 
-# We must build libsharpyuv from a specific libwebp commit
+# We must build libsharpyuv from the release used by libavif
 # See libavif/ext/libsharpyuv.cmd for more detail
-LIBWEBP_URL_WITH_SHARPYUV = https://chromium.googlesource.com/webm/libwebp/+archive/e2c85878f6a33f29948b43d3492d9cdaf801aa54.tar.gz
+LIBWEBP_VERSION = v1.6.0
+LIBWEBP_URL_WITH_SHARPYUV = https://chromium.googlesource.com/webm/libwebp/+archive/refs/tags/$(LIBWEBP_VERSION).tar.gz
 LIBWEBP_DIR := $(CODEC_DIR)/ext/libwebp
+LIBWEBP_SOURCE_STAMP := $(LIBWEBP_DIR)/.source-$(LIBWEBP_VERSION)
 LIBSHARPYUV_ST := $(LIBWEBP_DIR)/build_st/libsharpyuv.a
 LIBSHARPYUV_MT := $(LIBWEBP_DIR)/build_mt/libsharpyuv.a
 export LIBSHARPYUV := $(LIBWEBP_DIR)/build/libsharpyuv.a
@@ -38,7 +44,7 @@ HELPER_MAKEFLAGS := -f helper.Makefile
 all: $(OUT_ENC_JS) $(OUT_DEC_JS) $(OUT_ENC_MT_JS) $(OUT_NODE_ENC_JS)
 
 # ST-Encoding
-$(OUT_ENC_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLists.txt $(LIBSHARPYUV_ST)
+$(OUT_ENC_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLists.txt $(LIBSHARPYUV_ST) Makefile helper.Makefile
 	mkdir -p $(LIBWEBP_DIR)/build && cp $(LIBSHARPYUV_ST) $(LIBSHARPYUV)
 	$(MAKE) \
 		$(HELPER_MAKEFLAGS) \
@@ -50,9 +56,10 @@ $(OUT_ENC_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLis
 			-DCONFIG_AV1_HIGHBITDEPTH=0 \
 		" \
 		ENVIRONMENT=$(ENVIRONMENT) \
-		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0 -DAVIF_LOCAL_LIBSHARPYUV=ON"
+		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0" \
+		OUT_FLAGS="-s SUPPORT_LONGJMP=emscripten"
 
-$(OUT_NODE_ENC_JS): $(OUT_ENC_JS)
+$(OUT_NODE_ENC_JS): $(OUT_ENC_JS) Makefile helper.Makefile
 	mkdir -p $(@D)
 	$(MAKE) \
 		$(HELPER_MAKEFLAGS) \
@@ -65,11 +72,12 @@ $(OUT_NODE_ENC_JS): $(OUT_ENC_JS)
 			-DCONFIG_AV1_HIGHBITDEPTH=0 \
 		" \
 		ENVIRONMENT=node \
-		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0 -DAVIF_LOCAL_LIBSHARPYUV=ON"
+		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0" \
+		OUT_FLAGS="-s SUPPORT_LONGJMP=emscripten"
 
 # MT-Encoding
 # We need to run the ST and MT tasks sequentially to avoid conflicts with the copy of libsharpyuv in the build directory
-$(OUT_ENC_MT_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLists.txt $(LIBSHARPYUV_MT) | $(OUT_ENC_JS)
+$(OUT_ENC_MT_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLists.txt $(LIBSHARPYUV_MT) Makefile helper.Makefile | $(OUT_ENC_JS)
 	mkdir -p $(LIBWEBP_DIR)/build && cp $(LIBSHARPYUV_MT) $(LIBSHARPYUV)
 	$(MAKE) \
 		$(HELPER_MAKEFLAGS) \
@@ -80,11 +88,12 @@ $(OUT_ENC_MT_JS): $(OUT_ENC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMake
 			-DCONFIG_AV1_HIGHBITDEPTH=0 \
 		" \
 		ENVIRONMENT=$(ENVIRONMENT) \
-		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0 -DAVIF_LOCAL_LIBSHARPYUV=ON" \
-		OUT_FLAGS="-pthread"
+		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_DECODE=0" \
+		AVIF_THREAD_FLAGS="-pthread" \
+		OUT_FLAGS="-pthread -s SUPPORT_LONGJMP=emscripten"
 
 # Decoding
-$(OUT_DEC_JS): $(OUT_DEC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLists.txt
+$(OUT_DEC_JS): $(OUT_DEC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLists.txt Makefile helper.Makefile
 	$(MAKE) \
 		$(HELPER_MAKEFLAGS) \
 		OUT_JS=$@ \
@@ -94,7 +103,8 @@ $(OUT_DEC_JS): $(OUT_DEC_CPP) $(CODEC_DIR)/CMakeLists.txt $(LIBAOM_DIR)/CMakeLis
 			-DCONFIG_MULTITHREAD=0 \
 		" \
 		ENVIRONMENT=$(ENVIRONMENT) \
-		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_ENCODE=0"
+		LIBAVIF_FLAGS="-DAVIF_CODEC_AOM_ENCODE=0" \
+		OUT_FLAGS="-s SUPPORT_LONGJMP=emscripten"
 
 # LIBAOM EXTRACTION SECTION
 
@@ -103,10 +113,14 @@ $(LIBAOM_PACKAGE):
 	mkdir -p $(@D)
 	curl -sL $(LIBAOM_URL) -o $@
 
-# Extract libaom from the tarball
-$(LIBAOM_DIR)/CMakeLists.txt: $(LIBAOM_PACKAGE)
-	mkdir -p $(@D)
-	tar xzm -C $(@D) -f $(LIBAOM_PACKAGE)
+$(LIBAOM_DIR)/CMakeLists.txt: $(LIBAOM_SOURCE_STAMP)
+	touch $@
+
+$(LIBAOM_SOURCE_STAMP): $(LIBAOM_PACKAGE)
+	$(RM) -r $(LIBAOM_DIR)
+	mkdir -p $(LIBAOM_DIR)
+	tar xzm -C $(LIBAOM_DIR) -f $(LIBAOM_PACKAGE)
+	touch $@
 
 # LIBAVIF EXTRACTION SECTION
 
@@ -115,16 +129,24 @@ $(LIBAVIF_PACKAGE):
 	mkdir -p $(@D)
 	curl -sL $(LIBAVIF_URL) -o $@
 
-# Extract libavif from the tarball
-$(CODEC_DIR)/CMakeLists.txt: $(LIBAVIF_PACKAGE)
-	mkdir -p $(@D)
-	tar xzm --strip 1 -C $(@D) -f $(LIBAVIF_PACKAGE)
+$(CODEC_DIR)/CMakeLists.txt: $(LIBAVIF_SOURCE_STAMP)
+	touch $@
+
+$(LIBAVIF_SOURCE_STAMP): $(LIBAVIF_PACKAGE)
+	$(RM) -r $(CODEC_DIR)
+	mkdir -p $(CODEC_DIR)
+	tar xzm --strip 1 -C $(CODEC_DIR) -f $(LIBAVIF_PACKAGE)
+	touch $@
 
 # Create libavif/ext/libwebp
-$(LIBWEBP_DIR)/CMakeLists.txt: $(CODEC_DIR)/CMakeLists.txt
+$(LIBWEBP_DIR)/CMakeLists.txt: $(LIBWEBP_SOURCE_STAMP)
+	touch $@
+
+$(LIBWEBP_SOURCE_STAMP): $(CODEC_DIR)/CMakeLists.txt
+	$(RM) -r $(LIBWEBP_DIR)
 	mkdir -p $(LIBWEBP_DIR)
-	curl -sL $(LIBWEBP_URL_WITH_SHARPYUV) \
-		| tar xzm -C $(LIBWEBP_DIR)
+	curl -sL $(LIBWEBP_URL_WITH_SHARPYUV) | tar xzm -C $(LIBWEBP_DIR)
+	touch $@
 
 # Make libsharpyuv.a for ST-Encoding
 $(LIBSHARPYUV_ST): $(LIBWEBP_DIR)/CMakeLists.txt
@@ -168,8 +190,7 @@ $(LIBSHARPYUV_MT): $(LIBWEBP_DIR)/CMakeLists.txt
 	$(MAKE) -C $(@D) sharpyuv
 
 clean:
-	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_ENC_JS) clean
-	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_ENC_MT_JS) clean
-	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_DEC_JS) clean
-	$(MAKE) $(HELPER_MAKEFLAGS) OUT_JS=$(OUT_NODE_ENC_JS) clean
-	$(RM) $(OUT_NODE_ENC_JS) $(OUT_NODE_ENC_JS:.js=.wasm)
+	$(RM) $(OUT_ENC_JS) $(OUT_ENC_MT_JS) $(OUT_DEC_JS)
+	$(RM) $(OUT_ENC_JS:.js=.wasm) $(OUT_ENC_MT_JS:.js=.wasm) $(OUT_DEC_JS:.js=.wasm)
+	$(RM) $(OUT_ENC_JS:.js=.worker.js) $(OUT_ENC_MT_JS:.js=.worker.js) $(OUT_DEC_JS:.js=.worker.js)
+	$(RM) -r $(BUILD_DIR)

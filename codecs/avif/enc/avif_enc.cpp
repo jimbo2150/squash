@@ -3,6 +3,8 @@
 #include <emscripten/val.h>
 #include "avif/avif.h"
 
+#include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -58,7 +60,27 @@ struct AvifOptions {
 thread_local const val Uint8Array = val::global("Uint8Array");
 
 val encode(std::string buffer, int width, int height, AvifOptions options) {
-  avifResult status;  // To check the return status for avif API's
+  if (width <= 0 || height <= 0) {
+    return val::null();
+  }
+
+  const size_t widthSize = static_cast<size_t>(width);
+  const size_t heightSize = static_cast<size_t>(height);
+  if (widthSize > std::numeric_limits<size_t>::max() / heightSize) {
+    return val::null();
+  }
+
+  const size_t pixelCount = widthSize * heightSize;
+  if (pixelCount > std::numeric_limits<size_t>::max() / 4) {
+    return val::null();
+  }
+
+  if (buffer.size() != pixelCount * 4) {
+    return val::null();
+  }
+  uint8_t* rgba = reinterpret_cast<uint8_t*>(const_cast<char*>(buffer.data()));
+
+  avifResult status;
 
   int depth = 8;
   avifPixelFormat format;
@@ -90,8 +112,6 @@ val encode(std::string buffer, int width, int height, AvifOptions options) {
   } else {
     image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT601;
   }
-
-  uint8_t* rgba = reinterpret_cast<uint8_t*>(const_cast<char*>(buffer.data()));
 
   avifRGBImage srcRGB;
   avifRGBImageSetDefaults(&srcRGB, image.get());

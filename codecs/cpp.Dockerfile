@@ -1,5 +1,10 @@
-FROM emscripten/emsdk:2.0.34
-RUN apt-get update && apt-get install -qqy autoconf libtool pkg-config
+FROM emscripten/emsdk:3.1.1
+ARG CMAKE_VERSION=3.22.6
+RUN apt-get update && apt-get install -qqy autoconf libtool pkg-config curl \
+    && curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz" -o /tmp/cmake.tar.gz \
+    && tar -xzf /tmp/cmake.tar.gz --strip-components=1 -C /usr/local \
+    && rm /tmp/cmake.tar.gz
+ENV PATH="/usr/local/bin:${PATH}"
 ENV CFLAGS "-O3 -flto"
 ENV CXXFLAGS "${CFLAGS} -std=c++17"
 ENV LDFLAGS "${CFLAGS} \

@@ -28,7 +28,7 @@ npm --prefix codecs/avif run build
 npm run build
 ```
 
-The codec package scripts call `codecs/build-cpp.sh`, which builds the pinned `emscripten/emsdk:2.0.34` Docker image and runs each codec's Makefile. Docker must be running and accessible to the build session; source downloads also require network access. The codec builds regenerate `src/features/encoders/codec-versions.ts`; the root `npm run build` bundles the generated artifacts but does not rebuild native codecs.
+The codec package scripts call `codecs/build-cpp.sh`, which builds the pinned `emscripten/emsdk:3.1.1` Docker image and runs each codec's Makefile. The image also installs CMake 3.22.6, required by libavif v1.4.2. The AVIF build pins libaom v3.14.1 and libwebp v1.6.0 for SharpYUV. Docker must be running and accessible to the build session; source downloads also require network access. The codec builds regenerate `src/features/encoders/codec-versions.ts`; the root `npm run build` bundles the generated artifacts but does not rebuild native codecs.
 
 To run the Docker build directly, start in the JXL package directory from the repository root:
 
@@ -45,4 +45,4 @@ cd codecs/avif
 docker run --rm -v "$PWD:/src" squoosh-cpp
 ```
 
-Each container runs that directory's default Makefile target. The JXL target creates separate `st`, `mt`, and `mt-simd` CMake builds, with WASM threads disabled only for `st`. After a direct Docker build, run `npm run generate:codec-versions` from the repository root to refresh labels; `npm run build` also does this before bundling.
+Each container runs that directory's default Makefile target. The JXL target creates separate `st`, `mt`, and `mt-simd` CMake builds, with WASM threads disabled only for `st`. If changing AVIF compiler or CMake flags, run `make clean` from `codecs/avif` before rebuilding so cached CMake settings do not mask the new flags. After a direct Docker build, run `npm run generate:codec-versions` from the repository root to refresh labels; `npm run build` also does this before bundling.

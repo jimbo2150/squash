@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace emscripten;
@@ -35,7 +36,7 @@ bool setOption(JxlEncoderFrameSettings* settings, JxlEncoderFrameSettingId optio
   return JxlEncoderFrameSettingsSetOption(settings, option, value) == JXL_ENC_SUCCESS;
 }
 
-val encode(val image, int width, int height, JXLOptions options) {
+val encode(std::string image, int width, int height, JXLOptions options) {
   if (width <= 0 || height <= 0) {
     return val::null();
   }
@@ -47,12 +48,9 @@ val encode(val image, int width, int height, JXLOptions options) {
   }
 
   const size_t pixelCount = widthSize * heightSize;
-  const size_t imageSize = image["length"].as<size_t>();
-  if (pixelCount > std::numeric_limits<size_t>::max() / 4 || imageSize != pixelCount * 4) {
+  if (pixelCount > std::numeric_limits<size_t>::max() / 4 || image.size() != pixelCount * 4) {
     return val::null();
   }
-
-  std::vector<uint8_t> pixelData = convertJSArrayToNumberVector<uint8_t>(image);
 
   std::unique_ptr<JxlEncoder, decltype(&JxlEncoderDestroy)> encoder(JxlEncoderCreate(nullptr),
                                                                     JxlEncoderDestroy);
@@ -158,7 +156,7 @@ val encode(val image, int width, int height, JXLOptions options) {
   }
 
   const JxlPixelFormat pixelFormat = {4, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0};
-  if (JxlEncoderAddImageFrame(settings, &pixelFormat, pixelData.data(), pixelData.size()) !=
+  if (JxlEncoderAddImageFrame(settings, &pixelFormat, image.data(), image.size()) !=
       JXL_ENC_SUCCESS) {
     return val::null();
   }

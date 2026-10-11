@@ -5,13 +5,13 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "skcms.h"
 
 using namespace emscripten;
 
-thread_local const val Uint8Array = val::global("Uint8Array");
 thread_local const val Uint8ClampedArray = val::global("Uint8ClampedArray");
 thread_local const val ImageData = val::global("ImageData");
 
@@ -50,10 +50,7 @@ uint32_t version() {
 #define EXPECT_EQ(a, b) EXPECT_TRUE((a) == (b));
 #endif
 
-val decode(val data) {
-  val inputView = Uint8Array.new_(data);
-  std::vector<uint8_t> inputData = convertJSArrayToNumberVector<uint8_t>(inputView);
-
+val decode(std::string data) {
   std::unique_ptr<JxlDecoder,
                   std::integral_constant<decltype(&JxlDecoderDestroy), JxlDecoderDestroy>>
       dec(JxlDecoderCreate(nullptr));
@@ -61,7 +58,7 @@ val decode(val data) {
             JxlDecoderSubscribeEvents(
                 dec.get(), JXL_DEC_BASIC_INFO | JXL_DEC_COLOR_ENCODING | JXL_DEC_FULL_IMAGE));
 
-  JxlDecoderSetInput(dec.get(), inputData.data(), inputData.size());
+  JxlDecoderSetInput(dec.get(), reinterpret_cast<const uint8_t*>(data.data()), data.size());
   EXPECT_EQ(JXL_DEC_BASIC_INFO, JxlDecoderProcessInput(dec.get()));
   JxlBasicInfo info;
   EXPECT_EQ(JXL_DEC_SUCCESS, JxlDecoderGetBasicInfo(dec.get(), &info));

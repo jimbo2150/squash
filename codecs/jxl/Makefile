@@ -57,13 +57,13 @@ $(OUT_JS):
 		$(CODEC_BUILD_DIR)/third_party/brotli/libbrotlicommon.a \
 		$(CODEC_BUILD_DIR)/third_party/highway/libhwy.a
 
-%/lib/libjxl.a: %/Makefile
-	$(MAKE) -C $(<D) jxl
-
 %/lib/libjxl_cms.a: %/Makefile
 	$(MAKE) -C $(<D) jxl_cms
 
-%/lib/libjxl_threads.a: %/Makefile
+%/lib/libjxl.a: %/Makefile %/lib/libjxl_cms.a
+	$(MAKE) -C $(<D) jxl
+
+%/lib/libjxl_threads.a: %/Makefile %/lib/libjxl.a
 	$(MAKE) -C $(<D) jxl_threads
 
 $(CODEC_ST_BUILD_DIR)/Makefile: CMAKE_FLAGS += -DJPEGXL_ENABLE_WASM_THREADS=OFF
