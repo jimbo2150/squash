@@ -444,7 +444,7 @@ export default class Intro extends Component<Props, State> {
                 </a>
                 <a
                   class={style.footerLinkWithLogo}
-                  href="https://github.com/GoogleChromeLabs/squoosh"
+                  href="https://github.com/jimbo2150/squash"
                 >
                   <img src={githubLogo} alt="" width="10" height="10" />
                   Source on Github
