@@ -16,7 +16,7 @@ Build artifacts such as generated `.js`, `.wasm`, and declaration files appear a
 
 ### OxiPNG
 
-Build OxiPNG's single-threaded and parallel packages with `npm --prefix codecs/oxipng run build`. The default package uses the Rust 1.98.1 stable toolchain. The parallel package is the exception: it uses pinned nightly-2025-11-15 because `wasm-bindgen-rayon` requires nightly `build-std` to compile an atomics-enabled WebAssembly standard library. The build image installs both toolchains.
+Build OxiPNG's single-threaded and parallel packages with `npm --prefix codecs/oxipng run build`. The default package uses the Rust 1.98.1 stable toolchain. The parallel package is the exception: it uses pinned nightly-2025-11-15 because `wasm-bindgen-rayon` requires nightly `build-std` to compile an atomics-enabled WebAssembly standard library. It must also link shared, imported memory, set a maximum memory size, and export TLS symbols for Rayon workers; `+atomics` alone is not sufficient. The build image installs both toolchains. The app build emits the parallel ESM worker package under `/oxipng-parallel/` and explicitly precaches its JS, WASM, and worker helper because the generated helper is emitted separately from the bundled codec.
 
 The release profile skips `wasm-opt` because the optimizer bundled with the pinned Emscripten 2.0.8 image cannot process the generated module's multiple tables. If the optimizer is upgraded, verify it accepts both OxiPNG variants before enabling optimization again. See the [OxiPNG README](../codecs/oxipng/README.md) for the codec-local build notes.
 

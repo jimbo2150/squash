@@ -128,6 +128,11 @@ export const theRest = (async () => {
   // OXI
   if (supportsThreads) {
     addWithDeps(oxiMt);
+    items.push(
+      '/oxipng-parallel/squash_oxipng.js',
+      '/oxipng-parallel/squash_oxipng_bg.wasm',
+      '/oxipng-parallel/workerHelpers.js',
+    );
   } else {
     addWithDeps(oxi);
   }

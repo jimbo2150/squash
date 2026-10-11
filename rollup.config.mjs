@@ -208,6 +208,11 @@ export default async function ({ watch }) {
       ),
       ...commonPlugins(),
       emitFiles({ include: '**/*', root: path.join(__dirname, 'src', 'copy') }),
+      emitFiles({
+        include: '{squash_oxipng.js,squash_oxipng_bg.wasm,workerHelpers.js}',
+        prefix: 'oxipng-parallel/',
+        root: path.join(__dirname, 'codecs', 'oxipng', 'pkg-parallel'),
+      }),
       nodeExternalPlugin(),
       featurePlugin(),
       replace({

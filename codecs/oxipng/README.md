@@ -12,7 +12,9 @@ From the repository root, run:
 npm --prefix codecs/oxipng run build
 ```
 
-The build generates both the single-threaded and parallel WebAssembly packages. The default build uses Rust 1.98.1 stable. The parallel build uses pinned nightly-2025-11-15 because `wasm-bindgen-rayon` requires nightly `build-std` to rebuild the WebAssembly standard library with atomics enabled.
+The build generates both the single-threaded and parallel WebAssembly packages. The default build uses Rust 1.98.1 stable. The parallel build uses pinned nightly-2025-11-15 because `wasm-bindgen-rayon` requires nightly `build-std` to rebuild the WebAssembly standard library with atomics enabled. It also links shared, imported WebAssembly memory with a 1 GiB maximum and exports the TLS symbols required to start Rayon workers; atomics target features alone do not make memory shareable.
+
+The Rollup asset pipeline flattens worker files, so the Rayon worker cannot use its default `import('../../..')` package lookup. The codec build rewrites that import to `/oxipng-parallel/squash_oxipng.js`, and the app build emits the parallel ESM glue, WASM, and worker helper at `/oxipng-parallel/`; keep these paths in sync with the service-worker cache list.
 
 The release profile disables `wasm-opt`: the optimizer bundled with Emscripten 2.0.8 does not support the multiple tables emitted by the current bindings. Only re-enable it after upgrading and validating the optimizer against both generated packages.
 
