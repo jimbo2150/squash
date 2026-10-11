@@ -134,7 +134,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "squoosh-png"
+name = "squash-png"
 version = "0.1.0"
 dependencies = [
  "png",

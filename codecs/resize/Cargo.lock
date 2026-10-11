@@ -137,7 +137,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea6a9290e3c9cf0f18145ef7ffa62d68ee0bf5fcd651017e586dc7fd5da448c2"
 
 [[package]]
-name = "squoosh-resize"
+name = "squash-resize"
 version = "0.1.0"
 dependencies = [
  "cfg-if 0.1.10",

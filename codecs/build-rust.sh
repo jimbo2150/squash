@@ -5,7 +5,7 @@ then
   # Get part after ":" (https://stackoverflow.com/a/15149278/439965).
   IMG_SUFFIX=-${RUST_IMG#*:}
 fi
-IMG_NAME=squoosh-rust$IMG_SUFFIX
+IMG_NAME=squash-rust$IMG_SUFFIX
 docker build -t $IMG_NAME --build-arg RUST_IMG - < ../rust.Dockerfile
 docker run --rm -v $PWD:/src $IMG_NAME "$@"
 node "$(dirname "$0")/generate-version-metadata.mjs"

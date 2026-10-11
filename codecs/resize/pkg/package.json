@@ -1,15 +1,17 @@
 {
-  "name": "squoosh-resize",
+  "name": "squash-resize",
   "collaborators": [
     "Surma <surma@surma.link>"
   ],
   "version": "0.1.0",
   "files": [
-    "squoosh_resize_bg.wasm",
-    "squoosh_resize.js",
-    "squoosh_resize.d.ts"
+    "squash_resize_bg.wasm",
+    "squash_resize.js",
+    "squash_resize.d.ts"
   ],
-  "module": "squoosh_resize.js",
-  "types": "squoosh_resize.d.ts",
-  "sideEffects": false
+  "module": "squash_resize.js",
+  "types": "squash_resize.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
 }

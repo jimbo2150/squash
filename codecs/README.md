@@ -1,6 +1,6 @@
 # Codecs
 
-This folder contains a self-contained sub-project for each encoder and decoder that squoosh supplies.
+This folder contains a self-contained sub-project for each encoder and decoder that squash supplies.
 
 ## Build
 

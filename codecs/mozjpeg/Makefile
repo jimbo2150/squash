@@ -43,7 +43,7 @@ $(CODEC_DIR)/Makefile: $(CODEC_DIR)/configure
 		--without-simd \
 		--without-arith-enc \
 		--without-arith-dec \
-		--with-build-date=squoosh
+		--with-build-date=squash
 		# ^ If not provided with a dummy value, MozJPEG includes a build date in the
 		# binary as part of the version string, making binaries different each time.
 

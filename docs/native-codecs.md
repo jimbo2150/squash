@@ -1,6 +1,6 @@
 # Native codecs and WebAssembly
 
-Squoosh separates codec implementation artifacts from the browser-facing feature. Native codec code and its JavaScript/WebAssembly outputs live under [`codecs/`](../codecs/); TypeScript adapters under [`src/features/`](../src/features/) initialize and call those outputs. A codec format may have multiple variants for browser support, such as baseline, SIMD, or threaded builds.
+Squash separates codec implementation artifacts from the browser-facing feature. Native codec code and its JavaScript/WebAssembly outputs live under [`codecs/`](../codecs/); TypeScript adapters under [`src/features/`](../src/features/) initialize and call those outputs. A codec format may have multiple variants for browser support, such as baseline, SIMD, or threaded builds.
 
 ## Codec source and build entry points
 

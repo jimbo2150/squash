@@ -40,7 +40,7 @@ async function initializeCodecModule(relativePath) {
 
   const moduleSource = source
     .replace(/import\.meta\.url/g, JSON.stringify(pathToFileURL(modulePath).href))
-    .replace(exportPattern, 'globalThis.__squooshModule = Module;');
+    .replace(exportPattern, 'globalThis.__squashModule = Module;');
   const context = vm.createContext({
     Module: {
       locateFile: (filename) => path.join(path.dirname(modulePath), filename),
@@ -55,7 +55,7 @@ async function initializeCodecModule(relativePath) {
   });
 
   vm.runInContext(moduleSource, context, { filename: modulePath });
-  return context.__squooshModule({
+  return context.__squashModule({
     noInitialRun: true,
     locateFile: (filename) => path.join(path.dirname(modulePath), filename),
   });

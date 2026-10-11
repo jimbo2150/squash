@@ -1,8 +1,8 @@
-# Squoosh project documentation plan
+# Squash project documentation plan
 
 ## Goal and decisions
 
-Create contributor/model-facing documentation in `docs/` that explains how Squoosh is assembled and points maintainers to the right source files when changing behavior. Exclude end-user product guides. Use a short landing page plus focused guides; cover codec integration through native/WASM artifacts as well as TypeScript/UI wiring.
+Create contributor/model-facing documentation in `docs/` that explains how Squash is assembled and points maintainers to the right source files when changing behavior. Exclude end-user product guides. Use a short landing page plus focused guides; cover codec integration through native/WASM artifacts as well as TypeScript/UI wiring.
 
 ## Documentation work
 

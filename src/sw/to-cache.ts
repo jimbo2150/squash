@@ -37,8 +37,8 @@ import * as jxlEncMt from 'entry-data:codecs/jxl/enc/jxl_enc_mt';
 import * as jxlEnc from 'entry-data:codecs/jxl/enc/jxl_enc';
 
 // OXI
-import * as oxiMt from 'entry-data:codecs/oxipng/pkg-parallel/squoosh_oxipng';
-import * as oxi from 'entry-data:codecs/oxipng/pkg/squoosh_oxipng';
+import * as oxiMt from 'entry-data:codecs/oxipng/pkg-parallel/squash_oxipng';
+import * as oxi from 'entry-data:codecs/oxipng/pkg/squash_oxipng';
 
 // WebP
 import * as webpEncSimd from 'entry-data:codecs/webp/enc/webp_enc_simd';

@@ -1,6 +1,6 @@
 # Codec versions in selectors
 
-The encoder selectors display a semantic version as `(vX.Y.Z)` when Squoosh can determine one. Both comparison sides use the same generated version manifest. Codecs without a verifiable semantic version, including browser-provided encoders, appear without a version suffix; commit hashes are not shown.
+The encoder selectors display a semantic version as `(vX.Y.Z)` when Squash can determine one. Both comparison sides use the same generated version manifest. Codecs without a verifiable semantic version, including browser-provided encoders, appear without a version suffix; commit hashes are not shown.
 
 `src/features/encoders/codec-versions.ts` is generated and must not be edited by hand. Run `npm run generate:codec-versions` to refresh it from the built codec artifacts and pinned package inputs. The root `npm run build` and `npm run watch` commands refresh the manifest before bundling. C++ and Rust codec build wrappers also regenerate it after a codec build.
 
@@ -10,11 +10,11 @@ To update a codec version, rebuild that codec first so the version API and its a
 
 ## libjxl build variants
 
-Squoosh pins libjxl v0.12.0 for the update addressing [issue #1402](https://github.com/GoogleChromeLabs/squoosh/issues/1402). Its CMake configuration is built separately with `JPEGXL_ENABLE_WASM_THREADS=OFF` for the baseline encoder and decoder, and `ON` for the threaded encoder variants. Runtime capability detection and fallback remain unchanged. Rebuild the JXL package after changing its pin; its Makefile tracks the selected source version so an existing checkout is refreshed when the version changes.
+The repository pins libjxl v0.12.0 as part of the update tracked in [upstream issue #1402](https://github.com/GoogleChromeLabs/squoosh/issues/1402). Its CMake configuration is built separately with `JPEGXL_ENABLE_WASM_THREADS=OFF` for the baseline encoder and decoder, and `ON` for the threaded encoder variants. Runtime capability detection and fallback remain unchanged. Rebuild the JXL package after changing its pin; its Makefile tracks the selected source version so an existing checkout is refreshed when the version changes.
 
 The v0.12.0 release removes private C++ headers used by the old encoder wrapper. The encoder now uses libjxl's public `JxlEncoder` API and the public thread-parallel runner for threaded variants; the decoder retains its float-output and sRGB/ICC conversion path with the updated ICC-profile signatures. The generated Node encoder and decoder modules expose libjxl's version API, while browser-facing artifacts keep their existing names and automatic threading behavior.
 
-The public encoder API does not expose the old modular quality-pair control. Squoosh's existing modular quality curve is mapped through `JxlEncoderDistanceFromQuality()`; quality 100 uses the public lossless API, while quality-100 lossy-palette mode uses a small positive distance because libjxl rejects a zero distance unless lossless mode is enabled. The input/decoded pixel paths remain the same, but modular encodes are not guaranteed to be byte-identical to the previous libjxl version.
+The public encoder API does not expose the old modular quality-pair control. Squash's existing modular quality curve is mapped through `JxlEncoderDistanceFromQuality()`; quality 100 uses the public lossless API, while quality-100 lossy-palette mode uses a small positive distance because libjxl rejects a zero distance unless lossless mode is enabled. The input/decoded pixel paths remain the same, but modular encodes are not guaranteed to be byte-identical to the previous libjxl version.
 
 ## Build the updated codecs
 
@@ -34,15 +34,15 @@ To run the Docker build directly, start in the JXL package directory from the re
 
 ```sh
 cd codecs/jxl
-docker build -t squoosh-cpp - < ../cpp.Dockerfile
-docker run --rm -v "$PWD:/src" squoosh-cpp
+docker build -t squash-cpp - < ../cpp.Dockerfile
+docker run --rm -v "$PWD:/src" squash-cpp
 ```
 
 After the image is built, run this AVIF command from a fresh shell at the repository root:
 
 ```sh
 cd codecs/avif
-docker run --rm -v "$PWD:/src" squoosh-cpp
+docker run --rm -v "$PWD:/src" squash-cpp
 ```
 
 Each container runs that directory's default Makefile target. The JXL target creates separate `st`, `mt`, and `mt-simd` CMake builds, with WASM threads disabled only for `st`. If changing AVIF compiler or CMake flags, run `make clean` from `codecs/avif` before rebuilding so cached CMake settings do not mask the new flags. After a direct Docker build, run `npm run generate:codec-versions` from the repository root to refresh labels; `npm run build` also does this before bundling.

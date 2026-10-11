@@ -1,6 +1,6 @@
 # Developer documentation
 
-Squoosh is a browser-based image compression application. Its feature implementations are split between the user interface, TypeScript adapters, Web Workers, and codec artifacts. This documentation is for contributors and coding agents; it describes the repository, not how to use the app.
+Squash is a browser-based image compression application. Its feature implementations are split between the user interface, TypeScript adapters, Web Workers, and codec artifacts. This documentation is for contributors and coding agents; it describes the repository, not how to use the app.
 
 ## Start developing
 
@@ -24,15 +24,15 @@ For contribution and review expectations, see [`CONTRIBUTING.md`](../CONTRIBUTIN
 
 ## Source map
 
-| Area | Start here |
-| --- | --- |
-| Static HTML, manifest, and headers | [`src/static-build/`](../src/static-build/) |
-| Initial app and editor shell | [`src/client/initial-app/`](../src/client/initial-app/) |
-| Compression editor and image pipeline | [`src/client/lazy-app/Compress/`](../src/client/lazy-app/Compress/) |
-| Encoders, decoders, processors, preprocessors | [`src/features/`](../src/features/) |
-| Codec sources, build definitions, JS/WASM artifacts | [`codecs/`](../codecs/) |
-| Generated worker entry and worker bridge | [`src/features-worker/`](../src/features-worker/) and [`src/client/lazy-app/worker-bridge/`](../src/client/lazy-app/worker-bridge/) |
-| Service worker and offline asset list | [`src/sw/`](../src/sw/) |
-| Rollup configuration and build plugins | [`rollup.config.js`](../rollup.config.js) and [`lib/`](../lib/) |
+| Area                                                | Start here                                                                                                                          |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Static HTML, manifest, and headers                  | [`src/static-build/`](../src/static-build/)                                                                                         |
+| Initial app and editor shell                        | [`src/client/initial-app/`](../src/client/initial-app/)                                                                             |
+| Compression editor and image pipeline               | [`src/client/lazy-app/Compress/`](../src/client/lazy-app/Compress/)                                                                 |
+| Encoders, decoders, processors, preprocessors       | [`src/features/`](../src/features/)                                                                                                 |
+| Codec sources, build definitions, JS/WASM artifacts | [`codecs/`](../codecs/)                                                                                                             |
+| Generated worker entry and worker bridge            | [`src/features-worker/`](../src/features-worker/) and [`src/client/lazy-app/worker-bridge/`](../src/client/lazy-app/worker-bridge/) |
+| Service worker and offline asset list               | [`src/sw/`](../src/sw/)                                                                                                             |
+| Rollup configuration and build plugins              | [`rollup.config.js`](../rollup.config.js) and [`lib/`](../lib/)                                                                     |
 
 Some files in the feature worker, worker bridge, and feature metadata directories are generated during the build. Change the source features or generator instead of editing generated files; see [Architecture](architecture.md#workers-and-feature-discovery).
