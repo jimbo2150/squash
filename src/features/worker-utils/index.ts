@@ -22,3 +22,17 @@ export function initEmscriptenModule<T extends EmscriptenWasm.Module>(
 export function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
   return new Response(blob).arrayBuffer();
 }
+
+export function arrayBufferFromView(view: ArrayBufferView): ArrayBuffer {
+  if (
+    view.buffer instanceof ArrayBuffer &&
+    view.byteOffset === 0 &&
+    view.byteLength === view.buffer.byteLength
+  ) {
+    return view.buffer;
+  }
+
+  const buffer = new Uint8Array(view.byteLength);
+  buffer.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
+  return buffer.buffer;
+}

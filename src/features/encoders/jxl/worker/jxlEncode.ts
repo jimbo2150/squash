@@ -13,7 +13,10 @@
 import type { JXLModule } from 'codecs/jxl/enc/jxl_enc';
 import type { EncodeOptions } from '../shared/meta';
 
-import { initEmscriptenModule } from 'features/worker-utils';
+import {
+  arrayBufferFromView,
+  initEmscriptenModule,
+} from 'features/worker-utils';
 import { simd } from 'wasm-feature-detect';
 import checkThreadsSupport from 'worker-shared/supports-wasm-threads';
 
@@ -43,5 +46,5 @@ export default async function encode(
 
   if (!result) throw new Error('Encoding error.');
 
-  return result.buffer;
+  return arrayBufferFromView(result);
 }

@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2019",
-    "downlevelIteration": true,
     "module": "esnext",
+    "ignoreDeprecations": "6.0",
     "jsx": "react",
     "jsxFactory": "h",
     "strict": true,
+    "skipLibCheck": true,
     "moduleResolution": "node",
     "composite": true,
     "declarationMap": true,
@@ -14,11 +15,11 @@
     "outDir": ".tmp/ts",
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "static-build/*": ["src/static-build/*"],
-      "client/*": ["src/client/*"],
-      "shared/*": ["src/shared/*"],
-      "features/*": ["src/features/*"],
-      "worker-shared/*": ["src/worker-shared/*"]
+      "static-build/*": ["./src/static-build/*"],
+      "client/*": ["./src/client/*"],
+      "shared/*": ["./src/shared/*"],
+      "features/*": ["./src/features/*"],
+      "worker-shared/*": ["./src/worker-shared/*"]
     }
   }
 }

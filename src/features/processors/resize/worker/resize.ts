@@ -1,5 +1,6 @@
 import type { WorkerResizeOptions } from '../shared/meta';
 import { getContainOffsets } from '../shared/util';
+import { arrayBufferFromView } from 'features/worker-utils';
 import initResizeWasm, { resize as wasmResize } from 'codecs/resize/pkg';
 import initHqxWasm, { resize as wasmHqx } from 'codecs/hqx/pkg';
 
@@ -81,7 +82,7 @@ async function hqx(
   );
 
   return new ImageData(
-    new Uint8ClampedArray(result.buffer),
+    new Uint8ClampedArray(arrayBufferFromView(result)),
     input.width * factor,
     input.height * factor,
   );
@@ -133,7 +134,7 @@ export default async function resize(
   );
 
   return new ImageData(
-    new Uint8ClampedArray(result.buffer),
+    new Uint8ClampedArray(arrayBufferFromView(result)),
     opts.width,
     opts.height,
   );

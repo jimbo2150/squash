@@ -10,6 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { arrayBufferFromView } from 'features/worker-utils';
 import { EncodeOptions } from '../shared/meta';
 import checkThreadsSupport from 'worker-shared/supports-wasm-threads';
 
@@ -25,9 +26,8 @@ async function initMT() {
 }
 
 async function initST() {
-  const { default: init, optimise } = await import(
-    'codecs/oxipng/pkg/squoosh_oxipng'
-  );
+  const { default: init, optimise } =
+    await import('codecs/oxipng/pkg/squoosh_oxipng');
   await init();
   return optimise;
 }
@@ -45,11 +45,13 @@ export default async function encode(
   }
 
   const optimise = await wasmReady;
-  return optimise(
-    data.data,
-    data.width,
-    data.height,
-    options.level,
-    options.interlace,
-  ).buffer;
+  return arrayBufferFromView(
+    optimise(
+      data.data,
+      data.width,
+      data.height,
+      options.level,
+      options.interlace,
+    ),
+  );
 }
