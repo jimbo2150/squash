@@ -30,6 +30,10 @@ function resolveFileUrl({ fileName }) {
   return JSON.stringify(fileNameToURL(fileName));
 }
 
+function resolveClientAssetUrl({ fileName }) {
+  return `new URL(${JSON.stringify(fileNameToURL(fileName))}, location.origin).href`;
+}
+
 function resolveImportMetaUrlInStaticBuild(property, { moduleId }) {
   if (property !== 'url') return;
   throw new Error(dedent`
@@ -105,7 +109,7 @@ export default async function ({ watch }) {
         {
           external: ['worker_threads'],
           plugins: [
-            { resolveFileUrl },
+            { resolveFileUrl: resolveClientAssetUrl },
             importMetaAssets(),
             OMT({ loader: await omtLoaderPromise }),
             serviceWorkerPlugin({
