@@ -22,6 +22,8 @@ import { simd } from 'wasm-feature-detect';
 let emscriptenModule: Promise<WebPModule>;
 
 async function init() {
+  console.log('Using single-threaded WebP encoder');
+
   if (await simd()) {
     const webpEncoder = await import('codecs/webp/enc/webp_enc_simd');
     return initEmscriptenModule(webpEncoder.default);

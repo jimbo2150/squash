@@ -24,6 +24,12 @@ The release profile skips `wasm-opt` because the optimizer bundled with the pinn
 
 Build MozJPEG with `npm --prefix codecs/mozjpeg run build`. Its Makefile downloads the pinned v4.1.1 source and builds the static library with CMake through the Emscripten Docker wrapper. Rebuild this codec after changing its upstream version or wrapper, then run the root build to verify the generated artifacts are bundled.
 
+### WebP
+
+Build WebP with `npm --prefix codecs/webp run build`. It downloads the pinned libwebp v1.6.0 source, builds baseline encoder and decoder outputs plus a SIMD encoder variant, and regenerates codec version metadata. The SIMD build is still single-threaded: the Makefile disables CMake thread detection, and the app uses `thread_level: 0`. There is no threaded WebP variant. Run the root `npm run build` afterward to verify the app bundle.
+
+The [WebP codec README](../codecs/webp/README.md) documents the distinction between SIMD and multithreading.
+
 ## Connect a codec to the app
 
 For an encoder, trace the WebP example through these layers:

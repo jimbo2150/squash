@@ -1,4 +1,4 @@
-CODEC_URL = https://github.com/webmproject/libwebp/archive/d2e245ea9e959a5a79e1db0ed2085206947e98f2.tar.gz
+CODEC_URL = https://github.com/webmproject/libwebp/archive/4fa21912338357f89e4fd51cf2368325b59e9bd9.tar.gz
 CODEC_DIR = node_modules/libwebp
 CODEC_BUILD_ROOT := $(CODEC_DIR)/build
 CODEC_BASELINE_BUILD_DIR := $(CODEC_BUILD_ROOT)/baseline
@@ -16,9 +16,9 @@ all: $(OUT_JS)
 $(filter enc/%,$(OUT_JS)): enc/webp_enc.o
 $(filter dec/%,$(OUT_JS)): dec/webp_dec.o
 enc/webp_node_enc.js dec/webp_node_dec.js: ENVIRONMENT = node
-enc/webp_node_enc.js dec/webp_node_dec.js: $(CODEC_BASELINE_BUILD_DIR)/libwebp.a
-enc/webp_enc.js dec/webp_dec.js: $(CODEC_BASELINE_BUILD_DIR)/libwebp.a
-enc/webp_enc_simd.js: $(CODEC_SIMD_BUILD_DIR)/libwebp.a
+enc/webp_node_enc.js dec/webp_node_dec.js: $(CODEC_BASELINE_BUILD_DIR)/libwebp.a $(CODEC_BASELINE_BUILD_DIR)/libsharpyuv.a
+enc/webp_enc.js dec/webp_dec.js: $(CODEC_BASELINE_BUILD_DIR)/libwebp.a $(CODEC_BASELINE_BUILD_DIR)/libsharpyuv.a
+enc/webp_enc_simd.js: $(CODEC_SIMD_BUILD_DIR)/libwebp.a $(CODEC_SIMD_BUILD_DIR)/libsharpyuv.a
 
 $(OUT_JS):
 	$(LD) \
@@ -40,7 +40,7 @@ $(OUT_JS):
 	$(MAKE) -C $(@D)
 
 # Enable SIMD on a SIMD build.
-$(CODEC_SIMD_BUILD_DIR)/Makefile: CMAKE_FLAGS+=-DWEBP_ENABLE_SIMD=1
+$(CODEC_SIMD_BUILD_DIR)/Makefile: CMAKE_FLAGS+=-DWEBP_ENABLE_SIMD=1 -DCMAKE_C_FLAGS="$(CFLAGS) -msimd128 -DWEBP_USE_SSE2 -D__SSE__=1 -D__SSE2__=1 -D__SSE3__=1 -D__SSSE3__=1 -D__SSE4_1__=1"
 
 %/Makefile: $(CODEC_DIR)/CMakeLists.txt
 	emcmake cmake \
