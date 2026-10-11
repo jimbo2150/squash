@@ -31,6 +31,8 @@ To develop for Squoosh:
    npm run dev
    ```
 
+For architecture notes and feature-development guidance, see the [developer documentation](docs/README.md).
+
 # Contributing
 
 Squoosh is an open-source project that appreciates all community involvement. To contribute to the project, follow the [contribute guide](/CONTRIBUTING.md).
