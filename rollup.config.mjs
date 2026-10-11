@@ -34,6 +34,30 @@ function resolveClientAssetUrl({ fileName }) {
   return `new URL(${JSON.stringify(fileNameToURL(fileName))}, location.origin).href`;
 }
 
+function threadedCodecUrlPlugin() {
+  const codecModulePattern =
+    /\/codecs\/(?:avif\/enc\/avif_enc|jxl\/enc\/jxl_enc|wp2\/enc\/wp2_enc)_mt(?:_simd)?\.js$/;
+  const moduleInitialization = 'Module = Module || {};';
+
+  return {
+    name: 'threaded-codec-url',
+    transform(code, id) {
+      if (!codecModulePattern.test(id)) return null;
+      if (!code.includes('Module["mainScriptUrlOrBlob"]')) return null;
+
+      const initializationCount = code.split(moduleInitialization).length - 1;
+      if (initializationCount !== 1) {
+        throw new Error(`Unexpected Emscripten module format in ${id}`);
+      }
+
+      return code.replace(
+        moduleInitialization,
+        `${moduleInitialization}\n  Module["mainScriptUrlOrBlob"] = _scriptDir;`,
+      );
+    },
+  };
+}
+
 function resolveImportMetaUrlInStaticBuild(property, { moduleId }) {
   if (property !== 'url') return;
   throw new Error(dedent`
@@ -111,6 +135,7 @@ export default async function ({ watch }) {
           plugins: [
             { resolveFileUrl: resolveClientAssetUrl },
             importMetaAssets(),
+            threadedCodecUrlPlugin(),
             OMT({ loader: await omtLoaderPromise }),
             serviceWorkerPlugin({
               output: 'static/serviceworker.js',
