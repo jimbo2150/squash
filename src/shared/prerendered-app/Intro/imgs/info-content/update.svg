@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 512 384">
+  <path d="M474 30l7 22 22 7-22 7-7 22-7-22-22-7 22-7z" fill="#FF3385"/>
+  <path d="M364 28l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#FF3385"/>
+  <path d="M70 42l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#09f"/>
+  <rect x="32" y="92" width="196" height="200" rx="28" fill="#91D3FF" fill-opacity=".3" stroke="#09f" stroke-width="3"/>
+  <text x="130" y="202" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#1d1d1d">Squoosh</text>
+  <rect x="236" y="184" width="36" height="16" rx="8" fill="#FF3385"/>
+  <polygon points="272,164 308,192 272,220" fill="#FF3385"/>
+  <rect x="312" y="92" width="196" height="200" rx="28" fill="#FF3385" fill-opacity=".15" stroke="#FF3385" stroke-width="4"/>
+  <text x="410" y="202" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700" fill="#FF3385">Squash</text>
+  <circle cx="454" cy="134" r="24" fill="#FF3385"/>
+  <text x="454" y="141" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" fill="#fff">NEW</text>
+</svg>

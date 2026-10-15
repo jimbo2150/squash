@@ -4,14 +4,16 @@
 
 # Privacy
 
-Squash does not send your image to a server. All image compression processes locally.
+Squash is private by default:
 
-However, Squash utilizes Google Analytics to collect the following:
+- **No uploads.** Compression happens entirely inside your browser, so your
+  images never leave your device.
+- **No tracking.** Squash does not include analytics, ads, or third-party
+  trackers.
+- **No accounts, no storage.** You don't sign in, and nothing is saved on our
+  side.
 
-- [Basic visitor data](https://support.google.com/analytics/answer/6004245?ref_topic=2919631).
-- The before and after image size value.
-- If Squash PWA, the type of Squash installation.
-- If Squash PWA, the installation time and date.
+When you close the tab, everything is gone.
 
 # Developing
 

@@ -13,6 +13,9 @@ import deviceScreenIcon from 'url:./imgs/demos/icon-demo-device-screen.jpg';
 import smallSectionAsset from 'url:./imgs/info-content/small.svg';
 import simpleSectionAsset from 'url:./imgs/info-content/simple.svg';
 import secureSectionAsset from 'url:./imgs/info-content/secure.svg';
+import codecsSectionAsset from 'url:./imgs/info-content/codecs.svg';
+import fastSectionAsset from 'url:./imgs/info-content/fast.svg';
+import updateSectionAsset from 'url:./imgs/info-content/update.svg';
 import logoIcon from 'url:./imgs/demos/icon-demo-logo.png';
 import logoWithText from 'data-url-text:./imgs/logo-with-text.svg';
 import * as style from './style.css';
@@ -355,19 +358,22 @@ export default class Intro extends Component<Props, State> {
             <SlideOnScroll>
               <div class={style.infoContent}>
                 <div class={style.infoTextWrapper}>
-                  <h2 class={style.infoTitle}>Small</h2>
+                  <h2 class={style.infoTitle}>Smaller Images, Faster Pages</h2>
                   <p class={style.infoCaption}>
-                    Smaller images mean faster load times. Squash can reduce
-                    file size and maintain high quality.
+                    Compress images to a fraction of their original size with no
+                    visible quality loss. Squash reduces the file size of
+                    JPEG/JPG, PNG, WebP, and more, so your pages load faster,
+                    score better on Core Web Vitals, and rank higher in search.
                   </p>
                 </div>
                 <div class={style.infoImgWrapper}>
                   <img
                     class={style.infoImg}
                     src={smallSectionAsset}
-                    alt="silhouette of a large 1.4 megabyte image shrunk into a smaller 80 kilobyte image"
+                    alt="large 1.4 megabyte image compressed by Squash into a smaller 80 kilobyte image"
                     width="536"
                     height="522"
+                    loading="lazy"
                   />
                 </div>
               </div>
@@ -380,20 +386,22 @@ export default class Intro extends Component<Props, State> {
             <SlideOnScroll>
               <div class={style.infoContent}>
                 <div class={style.infoTextWrapper}>
-                  <h2 class={style.infoTitle}>Simple</h2>
+                  <h2 class={style.infoTitle}>Compress Images in Seconds</h2>
                   <p class={style.infoCaption}>
-                    Open your image, inspect the differences, then save
-                    instantly. Feeling adventurous? Adjust the settings for even
-                    smaller files.
+                    Drop in an image, compare the before-and-after quality, then
+                    download your optimized file instantly. No accounts, no
+                    uploads, no learning curve — an image compressor that just
+                    works.
                   </p>
                 </div>
                 <div class={style.infoImgWrapper}>
                   <img
                     class={style.infoImg}
                     src={simpleSectionAsset}
-                    alt="grid of multiple shrunk images displaying various options"
+                    alt="grid of before-and-after compressed images with adjustable quality options in Squash"
                     width="538"
                     height="384"
+                    loading="lazy"
                   />
                 </div>
               </div>
@@ -406,19 +414,110 @@ export default class Intro extends Component<Props, State> {
             <SlideOnScroll>
               <div class={style.infoContent}>
                 <div class={style.infoTextWrapper}>
-                  <h2 class={style.infoTitle}>Secure</h2>
+                  <h2 class={style.infoTitle}>Private and Secure by Design</h2>
                   <p class={style.infoCaption}>
-                    Worried about privacy? Images never leave your device since
-                    Squash does all the work locally.
+                    Your images never leave your device. Squash compresses
+                    everything locally in your browser — no uploads, no servers,
+                    no data collection — so your photos stay yours.
                   </p>
                 </div>
                 <div class={style.infoImgWrapper}>
                   <img
                     class={style.infoImg}
                     src={secureSectionAsset}
-                    alt="silhouette of a cloud with a 'no' symbol on top"
+                    alt="cloud with a 'no' symbol, meaning images are never uploaded to a server"
                     width="498"
                     height="333"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </SlideOnScroll>
+          </div>
+        </section>
+
+        <section class={style.info}>
+          <div class={style.infoContainer}>
+            <SlideOnScroll>
+              <div class={style.infoContent}>
+                <div class={style.infoTextWrapper}>
+                  <h2 class={style.infoTitle}>
+                    WebP, AVIF, JPEG XL &amp; More
+                  </h2>
+                  <p class={style.infoCaption}>
+                    Squash supports the latest versions of every major codec,
+                    including WebP, AVIF, and JPEG XL (JXL), alongside trusted
+                    classics like MozJPEG and OxiPNG. Pick the modern format
+                    your site needs — all in one image optimizer.
+                  </p>
+                </div>
+                <div class={style.infoImgWrapper}>
+                  <img
+                    class={style.infoImg}
+                    src={codecsSectionAsset}
+                    alt="file cards for the WebP, AVIF, and JPEG XL image codecs supported by Squash"
+                    width="512"
+                    height="400"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </SlideOnScroll>
+          </div>
+        </section>
+
+        <section class={style.info}>
+          <div class={style.infoContainer}>
+            <SlideOnScroll>
+              <div class={style.infoContent}>
+                <div class={style.infoTextWrapper}>
+                  <h2 class={style.infoTitle}>
+                    Faster Multi-Threaded Compression
+                  </h2>
+                  <p class={style.infoCaption}>
+                    Squash uses multi-threading to spread the work across all of
+                    your CPU cores, so even large images compress in parallel
+                    and finish in seconds, not minutes.
+                  </p>
+                </div>
+                <div class={style.infoImgWrapper}>
+                  <img
+                    class={style.infoImg}
+                    src={fastSectionAsset}
+                    alt="image fed through four parallel lanes into a multi-core processor, showing multi-threaded compression"
+                    width="512"
+                    height="384"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </SlideOnScroll>
+          </div>
+        </section>
+
+        <section class={style.info}>
+          <div class={style.infoContainer}>
+            <SlideOnScroll>
+              <div class={style.infoContent}>
+                <div class={style.infoTextWrapper}>
+                  <h2 class={style.infoTitle}>
+                    A Stepping Stone to a New Squoosh
+                  </h2>
+                  <p class={style.infoCaption}>
+                    Squash is a free, open-source update to Squoosh, providing
+                    new features, the latest codecs, and faster encoding while
+                    Squoosh is in transition. Think of it as a stepping stone —
+                    Squoosh will return with new updates.
+                  </p>
+                </div>
+                <div class={style.infoImgWrapper}>
+                  <img
+                    class={style.infoImg}
+                    src={updateSectionAsset}
+                    alt="arrow from a Squoosh app tile to an updated Squash app tile, showing Squash is the modern update"
+                    width="512"
+                    height="384"
+                    loading="lazy"
                   />
                 </div>
               </div>
@@ -438,7 +537,7 @@ export default class Intro extends Component<Props, State> {
               <footer class={style.footerItems}>
                 <a
                   class={style.footerLink}
-                  href="https://github.com/GoogleChromeLabs/squoosh/blob/dev/README.md#privacy"
+                  href="https://github.com/jimbo2150/squash/blob/dev/README.md#privacy"
                 >
                   Privacy
                 </a>
